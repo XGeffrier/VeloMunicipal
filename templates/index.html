@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Recherche commune</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            display: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3>Commencez à taper le nom d'une commune ou d'un code postal</h3>
+
+    <input list="communes" id="search" placeholder="37000 Tours">
+    <datalist id="communes">
+        {% for c in communes %}
+            <option value="{{ c.zipCode }} {{ c.name }}" data-insee="{{ c.inseeCode }}"></option>
+        {% endfor %}
+    </datalist>
+
+    <form id="form" method="get">
+        <button id="submitBtn">Voir</button>
+    </form>
+</div>
+
+<script>
+    const input = document.getElementById("search");
+    const button = document.getElementById("submitBtn");
+    const form = document.getElementById("form");
+    const options = document.querySelectorAll("#communes option");
+
+    let mapping = {};
+
+    options.forEach(opt => {
+        mapping[opt.value] = opt.dataset.insee;
+    });
+
+    input.addEventListener("input", () => {
+        const val = input.value;
+
+        if (mapping[val]) {
+            button.style.display = "inline-block";
+            form.action = "/commune/" + mapping[val];
+        } else {
+            button.style.display = "none";
+        }
+    });
+</script>
+
+</body>
+</html>

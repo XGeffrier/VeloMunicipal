@@ -1,0 +1,38 @@
+name: "Build and Deploy to cloud run after a PR is merged"
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  deploy:
+    if: ${{contains(github.event.pull_request.labels.*.name, 'deploy')}}
+    name: Deploy Flask API to Cloud Run (branch merged on main)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Cloud authentication
+        id: "auth"
+        uses: "google-github-actions/auth@v3"
+        with:
+          credentials_json: "${{ secrets.GCP_GLOUD_RUN }}"
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v3'
+        with:
+          version: 'latest'
+
+      - name: Cloud Run Deploy
+        run: |
+          gcloud run deploy velomunicipal \
+            --source=. \
+            --allow-unauthenticated \
+            --region=europe-west1 \
+            --project=fausse-commune \
+            --memory=4Gi \
+            --concurrency=20 \
+            --timeout=3600 \
+            --set-env-vars=APP_AUTH_TOKEN=${{ secrets.APP_AUTH_TOKEN }}
