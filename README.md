@@ -1,6 +1,6 @@
 # Vélo municipal
 
-À la veille du second tour des éléctions municipales de 2026 en France, ce projet a pour objectif de mesurer l'évolution des pistes cyclables dans les communes ces dernières années et de le comparer à la couleur politique de la mairie.
+À la veille du second tour des élections municipales de 2026 en France, ce projet a pour objectif de mesurer l'évolution des pistes cyclables dans les communes ces dernières années et de le comparer à la couleur politique de la mairie.
 
 Ce projet a été intégralement réalisé grâce à des données ouvertes.
 
@@ -38,6 +38,7 @@ Ce projet a été intégralement réalisé grâce à des données ouvertes.
 - Date : élections de 2020
 - Notes diverses :
   - La description détaillée de la méthode utilisée est disponible sur [cette page de data.gouv.fr](https://www.data.gouv.fr/datasets/communes-enrichies-avec-la-nuance-politique-france) et vaut la peine d'être lue.
+  - La liste des nuances politiques par acronyme est disponible [ici](https://www.archives-resultats-elections.interieur.gouv.fr/resultats/municipales-2020/nuances.php)
 
 ### Population par commune
 - Fichier : [ensemble/donnees_communes.csv](https://www.insee.fr/fr/statistiques/8680726?sommaire=8681011)
@@ -46,10 +47,9 @@ Ce projet a été intégralement réalisé grâce à des données ouvertes.
 - Producteur : [INSEE](https://www.insee.fr)
 - Date : recensement de 2023
 
-## Comment faire tourner le projet ?
-
-Avec [uv](https://docs.astral.sh/uv/) :
-
-1. Télécharger les différentes sources, les renommer et les placer dans le dossier `data`
-2. Installer les dépendances du projet : `uv sync`
-3. Lancer le projet : `uv run main.py`
+### Codes postaux
+- Fichier : [019HexaSmal.csv](https://www.data.gouv.fr/datasets/base-officielle-des-codes-postaux?resource_id=008a2dda-2c60-4b63-b910-998f6f818089)
+- Nom dans le projet : `postal_codes.csv`
+- Description : Base officielle des codes postaux
+- Producteur : [La Poste](https://www.laposte.fr/)
+- Date : 08/02/2026
