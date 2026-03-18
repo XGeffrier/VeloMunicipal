@@ -12,6 +12,7 @@ GEOVELO_2021_DATA_FILE = "geovelo_2021_07.geojson"
 GEOVELO_2026_DATA_FILE = "geovelo_2026_03.geojson"
 TOWNS_GEO_DATA_FILE = "towns_geo.geojson"
 TOWNS_ROAD_DATA_FILE = "towns_roads_2026.csv"
+POSTAL_DATA_FILE = "postal_codes.csv"
 
 
 def load_population_df() -> pd.DataFrame:
@@ -62,6 +63,18 @@ def load_roads_df() -> pd.DataFrame:
     return roads_df
 
 
+def load_postal_df() -> pd.DataFrame:
+    """
+    Output columns: 'insee', 'code_postal', 'nom'
+    """
+    types = {"Code_commune_INSEE": str, "Nom_de_la_commune": str, "Code_postal": str}
+    postal_df = pd.read_csv(DATA_DIR / POSTAL_DATA_FILE, dtype=types, sep=";")
+
+    columns_to_keep = ["Code_commune_INSEE", "Code_postal", "Nom_de_la_commune"]
+    renaming = {"Code_commune_INSEE": "insee", "Code_postal": "code_postal", "Nom_de_la_commune": "nom"}
+    return postal_df[columns_to_keep].rename(columns=renaming)
+
+
 def load_geovelo_gpd(small: bool = False) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Output columns: 'insee_d', 'insee_g', 'geometry'
@@ -87,3 +100,6 @@ def load_towns_gpd(small: bool = False) -> gpd.GeoDataFrame:
     renaming = {"code": "insee"}
     towns_gpd = towns_gpd[columns_to_keep].rename(columns=renaming)
     return towns_gpd
+
+if __name__ == '__main__':
+    postal_df = load_postal_df()
