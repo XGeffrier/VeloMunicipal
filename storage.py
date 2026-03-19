@@ -18,7 +18,6 @@ class StorageClient:
         If content_type is None, it will be guessed from the file extension.
         Raise exception if the urser does not have permission to write to the bucket.
         """
-        # todo: ensure parquet, geojson and zip have correct content_type
         bucket = cls._get_default_bucket()
         blob = bucket.blob(cls._clean_path(gs_path))
         blob.upload_from_filename(local_path, content_type=content_type, timeout=300)
@@ -35,6 +34,13 @@ class StorageClient:
         blob = bucket.blob(cls._clean_path(gs_path))
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         blob.download_to_filename(local_path)
+
+    @classmethod
+    def empty_files(cls):
+        bucket = cls._get_default_bucket()
+        blobs = bucket.list_blobs()
+        for blob in blobs:
+            blob.delete()
 
     @classmethod
     def _get_client(cls) -> storage.Client:
