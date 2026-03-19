@@ -144,6 +144,7 @@ class DataLoader:
             row_index = politics_df[politics_df["insee"] == "75056"].index[0]
             politics_df.at[row_index, "nuance_politique"] = "LUG"
             politics_df.at[row_index, "famille_nuance"] = "Gauche"
+            cls._raw_politics_df = politics_df
         return cls._raw_politics_df
 
     @classmethod
@@ -198,13 +199,13 @@ class DataLoader:
         For Paris, Lyon and Marseille, original files use insee codes of arrondissements, we use main code.
         """
         if cls._raw_geovelo_gpd_2021 is None or cls._raw_geovelo_gpd_2026 is None:
-            geovelo_2021_gpd = gpd.read_file(cls._get_local_file_path("geovelo_2021_07"))
-            geovelo_2026_gpd = gpd.read_file(cls._get_local_file_path("geovelo_2026_03"))
+            geovelo_gpd_2021 = gpd.read_file(cls._get_local_file_path("geovelo_2021_07"))
+            geovelo_gpd_2026 = gpd.read_file(cls._get_local_file_path("geovelo_2026_03"))
 
             columns_to_keep = ["code_com_d", "code_com_g", "geometry"]
             renaming = {"code_com_d": "insee_d", "code_com_g": "insee_g"}
-            geovelo_gpd_2021 = geovelo_2021_gpd[columns_to_keep].rename(columns=renaming)
-            geovelo_gpd_2026 = geovelo_2026_gpd[columns_to_keep].rename(columns=renaming)
+            geovelo_gpd_2021 = geovelo_gpd_2021[columns_to_keep].rename(columns=renaming)
+            geovelo_gpd_2026 = geovelo_gpd_2026[columns_to_keep].rename(columns=renaming)
 
             # Handle PLM : convert arronds code to main insee
             for town_name, town_infos in cls.PLM_INFOS.items():
@@ -214,8 +215,8 @@ class DataLoader:
                     mask = geovelo_gpd_2026[col_name].isin(town_infos["arronds"])
                     geovelo_gpd_2026.loc[mask, col_name] = town_infos["insee"]
 
-            cls._raw_geovelo_gpd_2021 = geovelo_2021_gpd
-            cls._raw_geovelo_gpd_2026 = geovelo_2026_gpd
+            cls._raw_geovelo_gpd_2021 = geovelo_gpd_2021
+            cls._raw_geovelo_gpd_2026 = geovelo_gpd_2026
         return cls._raw_geovelo_gpd_2021, cls._raw_geovelo_gpd_2026
 
     @classmethod
@@ -250,7 +251,8 @@ class DataLoader:
                               "00c000", "eeeeee", "DCBFA3", "FFFF00", "ffeb00", "ff9900", "00FFFF", "FAC577",
                               "FAC577", "0066cc", "0000ff", "adc1fd", "0082C4", "0D378A", "404040", "dddddd",
                               "dddddd", "dddddd"]
-            secondary_colors = [complementary_color(c) for c in primary_colors]
+            secondary_colors = ['#' + complementary_color(c) for c in primary_colors]
+            primary_colors = ['#' + c for c in primary_colors]
             cls._colors_df = pd.DataFrame({
                 "nuance_politique": nuances,
                 "nuance_politique_complete": nuances_meaning,
@@ -289,12 +291,14 @@ class DataLoader:
         if cls._processed_geovelo_df_2021 is None or cls._processed_geovelo_df_2026 is None:
             geovelo_2021_gpd, geovelo_2026_gpd = cls.get_raw_geovelo_gpds()
             cls._processed_geovelo_df_2021 = pd.read_parquet(
-                cls._get_local_file_path("geovelo_2021_df", lambda: group_geovelo_by_insee_code(
-                    enrich_geovelo_with_length(geovelo_2021_gpd)))
+                cls._get_local_file_path(
+                    "geovelo_2021_df",
+                    lambda: group_geovelo_by_insee_code(enrich_geovelo_with_length(geovelo_2021_gpd)))
             )
             cls._processed_geovelo_df_2026 = pd.read_parquet(
-                cls._get_local_file_path("geovelo_2026_df", lambda: group_geovelo_by_insee_code(
-                    enrich_geovelo_with_length(geovelo_2026_gpd)))
+                cls._get_local_file_path(
+                    "geovelo_2026_df",
+                    lambda: group_geovelo_by_insee_code(enrich_geovelo_with_length(geovelo_2026_gpd)))
             )
         return cls._processed_geovelo_df_2021, cls._processed_geovelo_df_2026
 
@@ -429,7 +433,10 @@ class DataLoader:
             logging.info("Erasing all cached files...")
             if os.path.exists(cls.DATA_DIR):
                 for file in os.listdir(cls.DATA_DIR):
-                    if file.endswith(".csv") or file.endswith(".zip") or file.endswith(".geojson"):
+                    if (file.endswith(".csv")
+                            or file.endswith(".zip")
+                            or file.endswith(".geojson")
+                            or file.endswith(".parquet")):
                         os.remove(os.path.join(cls.DATA_DIR, file))
             logging.info("Erased.")
 
