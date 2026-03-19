@@ -144,6 +144,7 @@ class DataLoader:
             row_index = politics_df[politics_df["insee"] == "75056"].index[0]
             politics_df.at[row_index, "nuance_politique"] = "LUG"
             politics_df.at[row_index, "famille_nuance"] = "Gauche"
+            cls._raw_politics_df = politics_df
         return cls._raw_politics_df
 
     @classmethod
@@ -198,24 +199,24 @@ class DataLoader:
         For Paris, Lyon and Marseille, original files use insee codes of arrondissements, we use main code.
         """
         if cls._raw_geovelo_gpd_2021 is None or cls._raw_geovelo_gpd_2026 is None:
-            geovelo_2021_gpd = gpd.read_file(cls._get_local_file_path("geovelo_2021_07"))
-            geovelo_2026_gpd = gpd.read_file(cls._get_local_file_path("geovelo_2026_03"))
+            geovelo_gpd_2021 = gpd.read_file(cls._get_local_file_path("geovelo_2021_07"))
+            geovelo_gpd_2026 = gpd.read_file(cls._get_local_file_path("geovelo_2026_03"))
 
             columns_to_keep = ["code_com_d", "code_com_g", "geometry"]
             renaming = {"code_com_d": "insee_d", "code_com_g": "insee_g"}
-            geovelo_gpd_2021 = geovelo_2021_gpd[columns_to_keep].rename(columns=renaming)
-            geovelo_gpd_2026 = geovelo_2026_gpd[columns_to_keep].rename(columns=renaming)
+            geovelo_gpd_2021 = geovelo_gpd_2021[columns_to_keep].rename(columns=renaming)
+            geovelo_gpd_2026 = geovelo_gpd_2026[columns_to_keep].rename(columns=renaming)
 
             # Handle PLM : convert arronds code to main insee
             for town_name, town_infos in cls.PLM_INFOS.items():
                 for col_name in ("insee_d", "insee_g"):
                     mask = geovelo_gpd_2021[col_name].isin(town_infos["arronds"])
-                    geovelo_gpd_2021 = geovelo_gpd_2021.loc[mask, col_name] = town_infos["insee"]
+                    geovelo_gpd_2021.loc[mask, col_name] = town_infos["insee"]
                     mask = geovelo_gpd_2026[col_name].isin(town_infos["arronds"])
-                    geovelo_gpd_2026 = geovelo_gpd_2026.loc[mask, col_name] = town_infos["insee"]
+                    geovelo_gpd_2026.loc[mask, col_name] = town_infos["insee"]
 
-            cls._raw_geovelo_gpd_2021 = geovelo_2021_gpd
-            cls._raw_geovelo_gpd_2026 = geovelo_2026_gpd
+            cls._raw_geovelo_gpd_2021 = geovelo_gpd_2021
+            cls._raw_geovelo_gpd_2026 = geovelo_gpd_2026
         return cls._raw_geovelo_gpd_2021, cls._raw_geovelo_gpd_2026
 
     @classmethod
@@ -250,7 +251,8 @@ class DataLoader:
                               "00c000", "eeeeee", "DCBFA3", "FFFF00", "ffeb00", "ff9900", "00FFFF", "FAC577",
                               "FAC577", "0066cc", "0000ff", "adc1fd", "0082C4", "0D378A", "404040", "dddddd",
                               "dddddd", "dddddd"]
-            secondary_colors = [complementary_color(c) for c in primary_colors]
+            secondary_colors = ['#' + complementary_color(c) for c in primary_colors]
+            primary_colors = ['#' + c for c in primary_colors]
             cls._colors_df = pd.DataFrame({
                 "nuance_politique": nuances,
                 "nuance_politique_complete": nuances_meaning,
@@ -265,7 +267,7 @@ class DataLoader:
         Output columns: 'insee', 'superficie'
         """
         if cls._processed_town_df is None:
-            cls._processed_town_df = pd.read_csv(
+            cls._processed_town_df = pd.read_parquet(
                 cls._get_local_file_path("towns_df", lambda: enrich_towns_with_area(cls.get_raw_towns_gpd()))
             )
         return cls._processed_town_df
@@ -276,7 +278,7 @@ class DataLoader:
         Output columns: 'insee', 'longueur_route'
         """
         if cls._processed_roads_df is None:
-            cls._processed_roads_df = pd.read_csv(
+            cls._processed_roads_df = pd.read_parquet(
                 cls._get_local_file_path("roads_df", lambda: enrich_roads_with_total_length(cls.get_raw_roads_df()))
             )
         return cls._processed_roads_df
@@ -288,13 +290,15 @@ class DataLoader:
         """
         if cls._processed_geovelo_df_2021 is None or cls._processed_geovelo_df_2026 is None:
             geovelo_2021_gpd, geovelo_2026_gpd = cls.get_raw_geovelo_gpds()
-            cls._processed_geovelo_df_2021 = pd.read_csv(
-                cls._get_local_file_path("geovelo_2021_df", lambda: group_geovelo_by_insee_code(
-                    enrich_geovelo_with_length(geovelo_2021_gpd)))
+            cls._processed_geovelo_df_2021 = pd.read_parquet(
+                cls._get_local_file_path(
+                    "geovelo_2021_df",
+                    lambda: group_geovelo_by_insee_code(enrich_geovelo_with_length(geovelo_2021_gpd)))
             )
-            cls._processed_geovelo_df_2026 = pd.read_csv(
-                cls._get_local_file_path("geovelo_2026_df", lambda: group_geovelo_by_insee_code(
-                    enrich_geovelo_with_length(geovelo_2026_gpd)))
+            cls._processed_geovelo_df_2026 = pd.read_parquet(
+                cls._get_local_file_path(
+                    "geovelo_2026_df",
+                    lambda: group_geovelo_by_insee_code(enrich_geovelo_with_length(geovelo_2026_gpd)))
             )
         return cls._processed_geovelo_df_2021, cls._processed_geovelo_df_2026
 
@@ -304,7 +308,7 @@ class DataLoader:
         Output columns: 'insee', 'code_postal', 'nom'
         """
         if cls._processed_postal_df is None:
-            cls._processed_postal_df = pd.read_csv(
+            cls._processed_postal_df = pd.read_parquet(
                 cls._get_local_file_path("postal_df", lambda: enrich_postal_with_name(cls.get_raw_postal_df(),
                                                                                       cls.get_raw_population_df()))
             )
@@ -319,7 +323,7 @@ class DataLoader:
         'code_postal'
         """
         if cls._merged_df is None:
-            cls._merged_df = pd.read_csv(
+            cls._merged_df = pd.read_parquet(
                 cls._get_local_file_path("merged_df", lambda: merge_all_dfs(cls.get_processed_town_df(),
                                                                             cls.get_raw_population_df(),
                                                                             cls.get_raw_politics_df(),
@@ -342,8 +346,8 @@ class DataLoader:
         """
         file_infos = cls.FILES_INFOS.get(name)
         if file_infos is None:
-            local_path = cls.DATA_DIR / f"{name}.csv"
-            storage_path = cls.STORAGE_PREFIX + f"{name}.csv"
+            local_path = cls.DATA_DIR / f"{name}.parquet"
+            storage_path = cls.STORAGE_PREFIX + f"{name}.parquet"
             download_url = None
         else:
             local_path = file_infos["local_path"]
@@ -366,7 +370,7 @@ class DataLoader:
             logging.info(f"File {name} loaded from direct URL.")
         else:
             df = obtention_fn()
-            df.to_csv(local_path, index=False)
+            df.to_parquet(local_path, index=False)
             logging.info(f"File {name} computed.")
 
         cls._upload_file_to_storage(local_path, storage_path)
@@ -427,9 +431,13 @@ class DataLoader:
 
         if files:
             logging.info("Erasing all cached files...")
-            for file in os.listdir(cls.DATA_DIR):
-                if file.endswith(".csv") or file.endswith(".zip") or file.endswith(".geojson"):
-                    os.remove(os.path.join(cls.DATA_DIR, file))
+            if os.path.exists(cls.DATA_DIR):
+                for file in os.listdir(cls.DATA_DIR):
+                    if (file.endswith(".csv")
+                            or file.endswith(".zip")
+                            or file.endswith(".geojson")
+                            or file.endswith(".parquet")):
+                        os.remove(os.path.join(cls.DATA_DIR, file))
             logging.info("Erased.")
 
         if storage:
@@ -448,4 +456,5 @@ def complementary_color(my_hex):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     DataLoader.erase_all_cache()
-    d = DataLoader.get_processed_postal_df()
+    DataLoader.get_merged_df()
+    DataLoader.get_processed_postal_df()

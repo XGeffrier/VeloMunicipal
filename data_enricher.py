@@ -10,7 +10,7 @@ def enrich_towns_with_area(towns_gpd: gpd.GeoDataFrame) -> pd.DataFrame:
     Output columns: 'insee', 'superficie'
     """
     projected_towns_gpd = towns_gpd.to_crs(epsg=27562)
-    projected_towns_gpd["superficie"] = projected_towns_gpd["geometry"].superficie
+    projected_towns_gpd["superficie"] = projected_towns_gpd["geometry"].area / 1_000_000
 
     towns_with_area_df = pd.DataFrame(projected_towns_gpd.drop(columns='geometry'))
     return towns_with_area_df
@@ -23,7 +23,7 @@ def enrich_geovelo_with_length(geovelo_gpd: gpd.GeoDataFrame) -> pd.DataFrame:
     Input columns: 'insee_d', 'insee_g', 'geometry'
     Output columns: 'insee_d', 'insee_g', 'longueur_piste'
     """
-    return pd.DataFrame({"longueur_piste": geovelo_gpd.to_crs(epsg=27562)["geometry"].length,
+    return pd.DataFrame({"longueur_piste": geovelo_gpd.to_crs(epsg=27562)["geometry"].length / 1000,
                          "insee_d": geovelo_gpd["insee_d"],
                          "insee_g": geovelo_gpd["insee_g"]})
 
