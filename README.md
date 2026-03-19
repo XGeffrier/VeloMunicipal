@@ -8,7 +8,6 @@ Ce projet a été intégralement réalisé grâce à des données ouvertes.
 
 ### Pistes cyclables
 - Fichiers : [france-20210708.geojson](https://www.data.gouv.fr/datasets/amenagements-cyclables-france-metropolitaine?resource_id=3c478b0c-e8b5-48fc-a543-9739f2abb4dd) et [france-20260302.geojson](https://www.data.gouv.fr/datasets/amenagements-cyclables-france-metropolitaine?resource_id=142fecf6-4873-4dac-9876-2019d925eaf8)
-- Noms dans le projet : `geovelo_2021_07.geojson` et `geovelo_2026_03.geojson`
 - Description : Cette base de données contient l'ensemble des aménagements cyclables de France métropolitaine numérisés dans OpenStreetMap et traités par Geovelo afin de les restituer selon le schéma national des aménagements cyclables. Le rattachement se fait par rapport aux codes géographiques des communes du millésime 2022.
 - Producteur : [Geovelo](https://geovelo.app/fr/)
 - Dates : 8 juillet 2021 et 2 mars 2026
@@ -18,21 +17,18 @@ Ce projet a été intégralement réalisé grâce à des données ouvertes.
 
 ### Forme des communes
 - Fichier : [communes-5m.geojson](https://adresse.data.gouv.fr/data/contours-administratifs/latest/geojson/communes-5m.geojson)
-- Nom dans le projet : `towns_geo.geojson`
 - Description : La forme des communes à une précision de 5m.
 - Producteur : [Base Adresse Nationale](https://adresse.data.gouv.fr/)
 - Date : 2025
 
 ### Kilométrage des routes par commune 
 - Fichier : [routes-km-communes-france-2.csv](https://www.data.gouv.fr/datasets/kilometrage-des-types-de-routes-repartis-par-communes-1?resource_id=da40f3d7-d2e5-4668-ae42-2ad187f59265)
-- Nom dans le projet : `towns_roads_2026.geojson`
 - Description : Kilométrage des types de routes répartis par communes. Jeu de données produit à partir des données OpenStreetMap française
 - Producteur : [Simul'impact](https://www.simul-impact.fr/)
 - Date : 27 janvier 2026
 
 ### Étiquette politique de la mairie par commune
 - Fichier : [communes-enrichiers-couleur-politique_2020.csv](https://www.data.gouv.fr/datasets/communes-enrichies-avec-la-nuance-politique-france?resource_id=ea5d6bc3-37d0-4884-a437-155a90c3e05f)
-- Nom dans le projet : `towns_politics_2020.geojson`
 - Description : Ce jeu de données publié correspond donc à la nuance politique récupérée des résultats des élections municipales aux tours 1 et 2, disponibles sur OpenDataSoft, appliquée à la commune (une nuance par commune).
 - Producteur : [Datactivist](https://datactivist.coop/fr/)
 - Date : élections de 2020
@@ -42,14 +38,12 @@ Ce projet a été intégralement réalisé grâce à des données ouvertes.
 
 ### Population par commune
 - Fichier : [ensemble/donnees_communes.csv](https://www.insee.fr/fr/statistiques/8680726?sommaire=8681011)
-- Nom dans le projet : `towns_population_2023.geojson`
 - Description : Fichier d'ensemble des populations en 2023
 - Producteur : [INSEE](https://www.insee.fr)
 - Date : recensement de 2023
 
 ### Codes postaux
 - Fichier : [019HexaSmal.csv](https://www.data.gouv.fr/datasets/base-officielle-des-codes-postaux?resource_id=008a2dda-2c60-4b63-b910-998f6f818089)
-- Nom dans le projet : `postal_codes.csv`
 - Description : Base officielle des codes postaux
 - Producteur : [La Poste](https://www.laposte.fr/)
 - Date : 08/02/2026
