@@ -7,8 +7,10 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
+from storage import StorageClient
+
 DATA_DIR = pathlib.Path(__file__).parent / "data"
-STORAGE_PREFIX = ""
+STORAGE_PREFIX = "datasource/"
 FILES_INFOS = [
     {"name": "towns_population_2023",
      "local_path": DATA_DIR / "towns_population_2023.zip",
@@ -163,11 +165,19 @@ def _download_file_from_storage(storage_path: str, local_path: str) -> bool:
     """
     Return True if the file was downloaded.
     """
-    raise NotImplementedError
+    try:
+        StorageClient.download_file(storage_path, local_path)
+    except:  # todo: explicit exception types, and log accordingly
+        return False
+    else:
+        return True
 
 
 def _upload_file_to_storage(local_path: str, storage_path: str):
-    raise NotImplementedError
+    try:
+        StorageClient.upload_file(storage_path, local_path)
+    except:  # todo: same
+        pass
 
 
 def _download_file_from_internet(url: str, local_path: str):
@@ -175,4 +185,3 @@ def _download_file_from_internet(url: str, local_path: str):
     response.raise_for_status()
     with open(local_path, "wb") as f:
         f.write(response.content)
-
