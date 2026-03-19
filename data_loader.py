@@ -210,9 +210,9 @@ class DataLoader:
             for town_name, town_infos in cls.PLM_INFOS.items():
                 for col_name in ("insee_d", "insee_g"):
                     mask = geovelo_gpd_2021[col_name].isin(town_infos["arronds"])
-                    geovelo_gpd_2021 = geovelo_gpd_2021.loc[mask, col_name] = town_infos["insee"]
+                    geovelo_gpd_2021.loc[mask, col_name] = town_infos["insee"]
                     mask = geovelo_gpd_2026[col_name].isin(town_infos["arronds"])
-                    geovelo_gpd_2026 = geovelo_gpd_2026.loc[mask, col_name] = town_infos["insee"]
+                    geovelo_gpd_2026.loc[mask, col_name] = town_infos["insee"]
 
             cls._raw_geovelo_gpd_2021 = geovelo_2021_gpd
             cls._raw_geovelo_gpd_2026 = geovelo_2026_gpd
@@ -292,7 +292,7 @@ class DataLoader:
                 cls._get_local_file_path("geovelo_2021_df", lambda: group_geovelo_by_insee_code(
                     enrich_geovelo_with_length(geovelo_2021_gpd)))
             )
-            cls._processed_geovelo_df_2026 = pd.read_csv(
+            cls._processed_geovelo_df_2026 = pd.read_parquet(
                 cls._get_local_file_path("geovelo_2026_df", lambda: group_geovelo_by_insee_code(
                     enrich_geovelo_with_length(geovelo_2026_gpd)))
             )
@@ -449,4 +449,5 @@ def complementary_color(my_hex):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     DataLoader.erase_all_cache()
-    d = DataLoader.get_processed_postal_df()
+    DataLoader.get_merged_df()
+    DataLoader.get_processed_postal_df()
