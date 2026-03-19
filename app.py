@@ -23,6 +23,12 @@ def index():
     return render_template("index.html", communes=communes)
 
 
+@app.route('/robots.txt')
+def robots():
+    """Route pour servir le fichier robots.txt"""
+    return "User-agent: *\nAllow: /", 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
 @app.route("/commune/<insee_code>")
 def commune(insee_code):
     data = get_data_of(insee_code)
