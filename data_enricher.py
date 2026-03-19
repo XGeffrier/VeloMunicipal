@@ -10,7 +10,7 @@ def enrich_towns_with_area(towns_gpd: gpd.GeoDataFrame) -> pd.DataFrame:
     Output columns: 'insee', 'superficie'
     """
     projected_towns_gpd = towns_gpd.to_crs(epsg=27562)
-    projected_towns_gpd["superficie"] = projected_towns_gpd["geometry"].superficie
+    projected_towns_gpd["superficie"] = projected_towns_gpd["geometry"].area
 
     towns_with_area_df = pd.DataFrame(projected_towns_gpd.drop(columns='geometry'))
     return towns_with_area_df

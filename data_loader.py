@@ -427,9 +427,10 @@ class DataLoader:
 
         if files:
             logging.info("Erasing all cached files...")
-            for file in os.listdir(cls.DATA_DIR):
-                if file.endswith(".csv") or file.endswith(".zip") or file.endswith(".geojson"):
-                    os.remove(os.path.join(cls.DATA_DIR, file))
+            if os.path.exists(cls.DATA_DIR):
+                for file in os.listdir(cls.DATA_DIR):
+                    if file.endswith(".csv") or file.endswith(".zip") or file.endswith(".geojson"):
+                        os.remove(os.path.join(cls.DATA_DIR, file))
             logging.info("Erased.")
 
         if storage:
@@ -448,4 +449,4 @@ def complementary_color(my_hex):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     DataLoader.erase_all_cache()
-    d = DataLoader.get_processed_postal_df()
+    d = DataLoader.get_merged_df()
