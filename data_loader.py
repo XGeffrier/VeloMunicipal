@@ -265,7 +265,7 @@ class DataLoader:
         Output columns: 'insee', 'superficie'
         """
         if cls._processed_town_df is None:
-            cls._processed_town_df = pd.read_csv(
+            cls._processed_town_df = pd.read_parquet(
                 cls._get_local_file_path("towns_df", lambda: enrich_towns_with_area(cls.get_raw_towns_gpd()))
             )
         return cls._processed_town_df
@@ -276,7 +276,7 @@ class DataLoader:
         Output columns: 'insee', 'longueur_route'
         """
         if cls._processed_roads_df is None:
-            cls._processed_roads_df = pd.read_csv(
+            cls._processed_roads_df = pd.read_parquet(
                 cls._get_local_file_path("roads_df", lambda: enrich_roads_with_total_length(cls.get_raw_roads_df()))
             )
         return cls._processed_roads_df
@@ -288,7 +288,7 @@ class DataLoader:
         """
         if cls._processed_geovelo_df_2021 is None or cls._processed_geovelo_df_2026 is None:
             geovelo_2021_gpd, geovelo_2026_gpd = cls.get_raw_geovelo_gpds()
-            cls._processed_geovelo_df_2021 = pd.read_csv(
+            cls._processed_geovelo_df_2021 = pd.read_parquet(
                 cls._get_local_file_path("geovelo_2021_df", lambda: group_geovelo_by_insee_code(
                     enrich_geovelo_with_length(geovelo_2021_gpd)))
             )
@@ -304,7 +304,7 @@ class DataLoader:
         Output columns: 'insee', 'code_postal', 'nom'
         """
         if cls._processed_postal_df is None:
-            cls._processed_postal_df = pd.read_csv(
+            cls._processed_postal_df = pd.read_parquet(
                 cls._get_local_file_path("postal_df", lambda: enrich_postal_with_name(cls.get_raw_postal_df(),
                                                                                       cls.get_raw_population_df()))
             )
@@ -319,7 +319,7 @@ class DataLoader:
         'code_postal'
         """
         if cls._merged_df is None:
-            cls._merged_df = pd.read_csv(
+            cls._merged_df = pd.read_parquet(
                 cls._get_local_file_path("merged_df", lambda: merge_all_dfs(cls.get_processed_town_df(),
                                                                             cls.get_raw_population_df(),
                                                                             cls.get_raw_politics_df(),
@@ -342,8 +342,8 @@ class DataLoader:
         """
         file_infos = cls.FILES_INFOS.get(name)
         if file_infos is None:
-            local_path = cls.DATA_DIR / f"{name}.csv"
-            storage_path = cls.STORAGE_PREFIX + f"{name}.csv"
+            local_path = cls.DATA_DIR / f"{name}.parquet"
+            storage_path = cls.STORAGE_PREFIX + f"{name}.parquet"
             download_url = None
         else:
             local_path = file_infos["local_path"]
@@ -366,7 +366,7 @@ class DataLoader:
             logging.info(f"File {name} loaded from direct URL.")
         else:
             df = obtention_fn()
-            df.to_csv(local_path, index=False)
+            df.to_parquet(local_path, index=False)
             logging.info(f"File {name} computed.")
 
         cls._upload_file_to_storage(local_path, storage_path)
@@ -449,4 +449,4 @@ def complementary_color(my_hex):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     DataLoader.erase_all_cache()
-    d = DataLoader.get_merged_df()
+    d = DataLoader.get_processed_postal_df()
