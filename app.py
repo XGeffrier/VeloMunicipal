@@ -1,8 +1,19 @@
 import logging
+import os
 
 from flask import Flask, render_template
 from back import get_all_communes, get_data_of
 
+if os.getenv("GOOGLE_RUNTIME"):
+    import google.cloud.logging
+
+    gcp_logging_client = google.cloud.logging.Client()
+    gcp_logging_client.get_default_handler()
+    gcp_logging_client.setup_logging()
+    logging.info("Google logging enabled")
+else:
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.info("Local logging enabled")
 app = Flask(__name__)
 
 
@@ -21,5 +32,4 @@ def commune(insee_code):
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
     app.run(debug=True)
