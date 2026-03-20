@@ -1,3 +1,5 @@
+import logging
+
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry.point import Point
@@ -30,58 +32,52 @@ def group_geovelo_by_insee_code(geovelo_single_year_gdf: gpd.GeoDataFrame) -> gp
     return geovelo_single_year_gdf
 
 
-def merge_geovelo_years(geovelo_gdf_2021: gpd.GeoDataFrame, geovelo_gdf_2026: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def combine_geovelo_years(geovelo_gdf_2021: gpd.GeoDataFrame, geovelo_gdf_2026: gpd.GeoDataFrame) -> pd.DataFrame:
     """
-    Input colomns : 'insee', 'geometry' (2 dataframes, insee are unique)
-    Output columns: 'insee', 'only_2026_geometry', 'only_2021_geometry', 'common_geometry' (1 dataframe)
+    Input columns : 'insee', 'geometry' (2 dataframes, insee are unique)
+    Output columns: 'insee', 'geometry' (3 dataframes)
     """
     merged = geovelo_gdf_2021.merge(geovelo_gdf_2026, on='insee', how='outer', suffixes=('_2021', '_2026'))
 
-    # We have to use a tolerance: sometimes lanes are slightly different in 2021 and 2026, but are actually the same.
     tolerance = 20  # meters
 
-    def compute_one_row(row):
-        geom_2021 = row['geometry_2021']
-        geom_2026 = row['geometry_2026']
+    g21 = gpd.GeoSeries(merged['geometry_2021'], crs=geovelo_gdf_2021.crs)
+    g26 = gpd.GeoSeries(merged['geometry_2026'], crs=geovelo_gdf_2026.crs)
 
-        if geom_2021 is None or geom_2026 is None:
-            row["only_2026_geometry"] = geom_2026 if geom_2026 is not None else Point()
-            row["only_2021_geometry"] = geom_2021 if geom_2021 is not None else Point()
-            row["common_geometry"] = Point()
-            return row
+    # Identify rows where one side is missing
+    logging.info("Identify rows where one side is missing")
+    null_21 = g21.is_empty | g21.isna()
+    null_26 = g26.is_empty | g26.isna()
+    both_present = ~null_21 & ~null_26
+    g21_valid = g21.where(both_present, other=Point())
+    g26_valid = g26.where(both_present, other=Point())
 
-        geom_2021_buffered = geom_2021.buffer(tolerance)
-        geom_2026_buffered = geom_2026.buffer(tolerance)
+    logging.info("Buffer 1")
+    buffered_21 = g21_valid.buffer(tolerance, resolution=1)
+    logging.info("Buffer 2")
+    buffered_26 = g26_valid.buffer(tolerance, resolution=1)
 
-        only_2026_geometry = geom_2026.difference(geom_2021_buffered)
-        only_2021_geometry = geom_2021.difference(geom_2026_buffered)
-        common_geometry = geom_2021.union(geom_2026).difference(only_2026_geometry).difference(only_2021_geometry)
+    logging.info("Difference 1")
+    only_2026 = g26_valid.difference(buffered_21)
+    logging.info("Difference 2")
+    only_2021 = g21_valid.difference(buffered_26)
+    logging.info("Difference 3")
+    common = g21_valid.union(g26_valid).difference(only_2026).difference(only_2021)
 
-        row["only_2026_geometry"] = only_2026_geometry
-        row["only_2021_geometry"] = only_2021_geometry
-        row["common_geometry"] = common_geometry
+    logging.info("Compute lengths")
+    only_2026_length = only_2026.length / 1000
+    only_2021_length = only_2021.length / 1000
+    common_length = common.length / 1000
 
-        return row
+    # create geodataframe with 'insee' column and 'geometry' column for each of the 3 geometries
+    # common_gdf = gpd.GeoDataFrame(pd.DataFrame({"insee": merged["insee"], "geometry": common}))
+    # only_2026_gdf = gpd.GeoDataFrame(pd.DataFrame({"insee": merged["insee"], "geometry": only_2026}))
+    # only_2021_gdf = gpd.GeoDataFrame(pd.DataFrame({"insee": merged["insee"], "geometry": only_2021}))
 
-    merged = merged.apply(compute_one_row, axis=1)
-    merged = merged.drop(columns=['geometry_2021', 'geometry_2026'])
-
-    return merged
-
-
-def enrich_geovelo_with_length(geovelo_both_years_gdf: gpd.GeoDataFrame) -> pd.DataFrame:
-    """
-    Add length info to a geovelo gpd. Remove geometry info to turn GeoDataFrame into DataFrame.
-
-    Input columns: 'insee', 'only_2026_geometry', 'only_2021_geometry', 'common_geometry'
-    Output columns: 'insee', 'longueur_piste_2026', 'longueur_piste_2021'
-    """
-    only_2026_length = geovelo_both_years_gdf["only_2026_geometry"].length / 1000
-    only_2021_length = geovelo_both_years_gdf["only_2021_geometry"].length / 1000
-    common_length = geovelo_both_years_gdf["common_geometry"].length / 1000
+    logging.info("Return dataframe")
     return pd.DataFrame({"longueur_piste_2026": only_2026_length + common_length,
                          "longueur_piste_2021": only_2021_length + common_length,
-                         "insee": geovelo_both_years_gdf["insee"]})
+                         "insee": merged["insee"]})
 
 
 def enrich_roads_with_total_length(roads_df: pd.DataFrame) -> pd.DataFrame:
