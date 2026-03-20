@@ -1,8 +1,12 @@
 # Vélo municipal
 
-À la veille du second tour des élections municipales de 2026 en France, ce projet a pour objectif de mesurer l'évolution des pistes cyclables dans les communes ces dernières années et de le comparer à la couleur politique de la mairie.
+À la veille du second tour des élections municipales de 2026 en France, le site [velomunicipal.fr](https://velomunicipal.fr/) a pour objectif de mesurer l'évolution des pistes cyclables dans les communes françaises ces dernières années et de le comparer à la couleur politique de la mairie.
 
-Ce projet a été intégralement réalisé grâce à des données ouvertes.
+Ce projet a été intégralement réalisé grâce à des données ouvertes par [Xavier Geffrier](https://www.linkedin.com/in/xavier-geffrier-4515b390). Le code est disponible sur [GitHub]https://github.com/XGeffrier/VeloMunicipal).
+
+Attention, des erreurs sont possibles. En particulier :
+- La plupart des maires n'étant pas affiliés à un parti, surtout dans les petites communes rurales, de nombreuses communes n'ont pas de données politiques, ce qui est normal. Toutefois, même certaines grandes villes où la couleur politique du maire est connue ne sont pas correctement renseignées pour le moment.
+- La base de pistes cyclables utilisées, maintenue par Géovelo, se base sur des enregistrement de contributeurs volontaires dans OpenStreetMap, et des erreurs ou des manques sont possibles. 
 
 ## Sources des données
 
@@ -29,7 +33,7 @@ Ce projet a été intégralement réalisé grâce à des données ouvertes.
 
 ### Étiquette politique de la mairie par commune
 - Fichier : [communes-enrichiers-couleur-politique_2020.csv](https://www.data.gouv.fr/datasets/communes-enrichies-avec-la-nuance-politique-france?resource_id=ea5d6bc3-37d0-4884-a437-155a90c3e05f)
-- Description : Ce jeu de données publié correspond donc à la nuance politique récupérée des résultats des élections municipales aux tours 1 et 2, disponibles sur OpenDataSoft, appliquée à la commune (une nuance par commune).
+- Description : Nuance politique récupérée des résultats des élections municipales aux tours 1 et 2, disponibles sur OpenDataSoft, appliquée à la commune (une nuance par commune).
 - Producteur : [Datactivist](https://datactivist.coop/fr/)
 - Date : élections de 2020
 - Notes diverses :
