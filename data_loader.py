@@ -146,6 +146,9 @@ class DataLoader:
             renaming = {"cog_commune": "insee"}
             politics_df = politics_df[columns_to_keep].rename(columns=renaming)
 
+            # when there is a comma in politics_df["nuance_politique"], split and keep only the first part
+            politics_df["nuance_politique"] = politics_df["nuance_politique"].str.split(",", expand=True)[0]
+
             # add Paris data (insee 75056) : nuance_politique = "LUG", famille_nuance = "Gauche"
             row_index = politics_df[politics_df["insee"] == "75056"].index[0]
             politics_df.at[row_index, "nuance_politique"] = "LUG"
@@ -340,11 +343,10 @@ class DataLoader:
         Output columns: 'insee', 'longueur_piste_2026', 'longueur_piste_2021'
         """
         if cls._processed_geovelo_length_df is None:
-            processed_geovelo_gdf_2021, processed_geovelo_gdf_2026 = cls.get_processed_geovelo_gdfs()
             cls._processed_geovelo_length_df = pd.read_parquet(
                 cls._get_local_file_path(
                     "geovelo_length_df",
-                    lambda: combine_geovelo_years(processed_geovelo_gdf_2021, processed_geovelo_gdf_2026))
+                    lambda: combine_geovelo_years(*cls.get_processed_geovelo_gdfs()))
             )
         return cls._processed_geovelo_length_df
 
