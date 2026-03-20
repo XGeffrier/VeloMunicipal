@@ -80,6 +80,24 @@
     margin-left: 10px;
   }
 
+  .back-button {
+    display: inline-block;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--primary-dark);
+    border-radius: 6px;
+    color: var(--primary-dark);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+
+  .back-button:hover {
+    background: white;
+  }
+
   /* ── Footer (bas du dégradé = blanc, texte sombre) ── */
   .site-footer { color: rgba(0, 0, 0, 0.5); }
   .site-footer .footer-how { color: rgba(0, 0, 0, 0.7); }
@@ -94,6 +112,8 @@
 {% block content %}
 <div class="container">
   <div class="card">
+
+    <a href="/" class="back-button">← Retour à la recherche</a>
 
     <h1>{{ data.nom }}</h1>
 
