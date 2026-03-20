@@ -270,7 +270,7 @@ class DataLoader:
         """
         if cls._processed_town_df is None:
             cls._processed_town_df = pd.read_parquet(
-                cls._get_local_file_path("towns_df.parquet", lambda: enrich_towns_with_area(cls.get_raw_towns_gdf()))
+                cls._get_local_file_path("towns_df", lambda: enrich_towns_with_area(cls.get_raw_towns_gdf()))
             )
         return cls._processed_town_df
 
@@ -281,7 +281,7 @@ class DataLoader:
         """
         if cls._processed_roads_df is None:
             cls._processed_roads_df = pd.read_parquet(
-                cls._get_local_file_path("roads_df.parquet",
+                cls._get_local_file_path("roads_df",
                                          lambda: enrich_roads_with_total_length(cls.get_raw_roads_df()))
             )
         return cls._processed_roads_df
@@ -293,14 +293,14 @@ class DataLoader:
         """
         if cls._processed_geovelo_gdf_2021 is None or cls._processed_geovelo_gdf_2026 is None:
             geovelo_2021_gdf, geovelo_2026_gdf = cls.get_raw_geovelo_gdfs()
-            cls._processed_geovelo_gdf_2021 = gpd.read_file(
+            cls._processed_geovelo_gdf_2021 = gpd.read_parquet(
                 cls._get_local_file_path(
-                    "geovelo_2021_gdf.geojson",
+                    "geovelo_2021_gdf",
                     lambda: group_geovelo_by_insee_code(geovelo_2021_gdf))
             )
-            cls._processed_geovelo_gdf_2026 = gpd.read_file(
+            cls._processed_geovelo_gdf_2026 = gpd.read_parquet(
                 cls._get_local_file_path(
-                    "geovelo_2026_gdf.geojson",
+                    "geovelo_2026_gdf",
                     lambda: group_geovelo_by_insee_code(geovelo_2026_gdf))
             )
         return cls._processed_geovelo_gdf_2021, cls._processed_geovelo_gdf_2026
@@ -312,9 +312,9 @@ class DataLoader:
         """
         if cls._processed_unique_geovelo_gdf is None:
             processed_geovelo_gdf_2021, processed_geovelo_gdf_2026 = cls.get_processed_geovelo_gdfs()
-            cls._processed_unique_geovelo_gdf = gpd.read_file(
+            cls._processed_unique_geovelo_gdf = gpd.read_parquet(
                 cls._get_local_file_path(
-                    "geovelo_unique_gdf.geojson",
+                    "geovelo_unique_gdf",
                     lambda: merge_geovelo_years(processed_geovelo_gdf_2021, processed_geovelo_gdf_2026))
             )
         return cls._processed_unique_geovelo_gdf
@@ -327,7 +327,7 @@ class DataLoader:
         if cls._processed_geovelo_length_df is None:
             cls._processed_geovelo_length_df = pd.read_parquet(
                 cls._get_local_file_path(
-                    "geovelo_length_df.parquet",
+                    "geovelo_length_df",
                     lambda: enrich_geovelo_with_length(cls.get_processed_unique_geovelo_gdf()))
             )
         return cls._processed_geovelo_length_df
@@ -339,7 +339,7 @@ class DataLoader:
         """
         if cls._processed_postal_df is None:
             cls._processed_postal_df = pd.read_parquet(
-                cls._get_local_file_path("postal_df.parquet",
+                cls._get_local_file_path("postal_df",
                                          lambda: enrich_postal_with_name(cls.get_raw_postal_df(),
                                                                          cls.get_raw_population_df()))
             )
@@ -355,7 +355,7 @@ class DataLoader:
         """
         if cls._merged_df is None:
             cls._merged_df = pd.read_parquet(
-                cls._get_local_file_path("merged_df.parquet",
+                cls._get_local_file_path("merged_df",
                                          lambda: merge_all_dfs(cls.get_processed_town_df(),
                                                                cls.get_raw_population_df(),
                                                                cls.get_raw_politics_df(),
@@ -378,8 +378,8 @@ class DataLoader:
         """
         file_infos = cls.FILES_INFOS.get(name)
         if file_infos is None:
-            local_path = cls.DATA_DIR / f"{name}"
-            storage_path = cls.STORAGE_PREFIX + f"{name}"
+            local_path = cls.DATA_DIR / f"{name}.parquet"
+            storage_path = cls.STORAGE_PREFIX + f"{name}.parquet"
             download_url = None
         else:
             local_path = file_infos["local_path"]
@@ -401,12 +401,8 @@ class DataLoader:
             cls._download_file_from_internet(download_url, local_path)
             logging.info(f"File {name} loaded from direct URL.")
         else:
-            df = obtention_fn()
-            if isinstance(df, pd.DataFrame):
-
-                df.to_parquet(local_path, index=False)
-            elif isinstance(df, gpd.GeoDataFrame):
-                df.to_file(local_path, driver="GeoJSON")
+            df = obtention_fn() # df may be a geodataframe or a dataframe
+            df.to_parquet(local_path, index=False)
             logging.info(f"File {name} computed.")
 
         cls._upload_file_to_storage(local_path, storage_path)
@@ -495,6 +491,6 @@ def complementary_color(my_hex):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    DataLoader.erase_all_cache(storage=False)
+    # DataLoader.erase_all_cache(storage=False)
     DataLoader.get_merged_df()
     DataLoader.get_processed_postal_df()
