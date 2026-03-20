@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Vélo Municipal{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      text-align: center;
+      padding: 40px 16px 32px;
+      margin-top: 48px;
+    }
+
+    .footer-how {
+      display: inline-block;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      margin-bottom: 10px;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .footer-how:hover { opacity: 0.75; }
+
+    .footer-links {
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .footer-links a { text-decoration: none; }
+    .footer-links a:hover { text-decoration: underline; }
+
+    .footer-sep {
+      margin: 0 8px;
+      opacity: 0.35;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 18px;
+      padding: 36px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 55vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+      position: relative;
+    }
+    .modal-box h3 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+    .modal-box h4 {
+      margin-top: 24px;
+      margin-bottom: 8px;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.5;
+    }
+    .modal-box p {
+      margin: 0 0 12px;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+    .modal-box ul {
+      padding-left: 20px;
+      margin: 0 0 12px;
+    }
+    .modal-box ul li {
+      font-size: 14px;
+      line-height: 1.65;
+      margin-bottom: 6px;
+    }
+    .modal-box a { color: #4a6cff; }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 22px;
+      cursor: pointer;
+      opacity: 0.35;
+      line-height: 1;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .modal-close:hover { opacity: 0.9; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% block bg %}{% endblock %}
+  {% block content %}{% endblock %}
+
+  <footer class="site-footer">
+    <div>
+      <button class="footer-how" onclick="document.getElementById('modal-how').classList.add('open')">
+        Comment ça marche ?
+      </button>
+    </div>
+    <div class="footer-links">
+      <a href="https://www.linkedin.com/in/xavier-geffrier-4515b390/" target="_blank" rel="noopener">Xavier Geffrier</a>
+      <span class="footer-sep">–</span>
+      <a href="https://github.com/XGeffrier/VeloMunicipal" target="_blank" rel="noopener">Sources du projet</a>
+      <span class="footer-sep">–</span>
+      <a href="https://www.flaticon.com/free-icons/bike" target="_blank" rel="noopener">Favicon par Freepik</a>
+    </div>
+  </footer>
+
+  <div class="modal-overlay" id="modal-how" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box">
+      <button class="modal-close" onclick="document.getElementById('modal-how').classList.remove('open')">✕</button>
+      <h3>Comment ça marche ?</h3>
+
+      <p>À la veille du second tour des élections municipales de 2026 en France, <strong>velomunicipal.fr</strong> mesure l'évolution des pistes cyclables dans les communes françaises ces dernières années et la compare à la couleur politique de la mairie.</p>
+
+      <p>Ce projet a été intégralement réalisé grâce à des données ouvertes par <a href="https://www.linkedin.com/in/xavier-geffrier-4515b390" target="_blank" rel="noopener">Xavier Geffrier</a>. Le code est disponible sur <a href="https://github.com/XGeffrier/VeloMunicipal" target="_blank" rel="noopener">GitHub</a>.</p>
+
+      <p>⚠️ <strong>Attention, des erreurs sont possibles.</strong> En particulier :</p>
+      <ul>
+        <li>La plupart des maires n'étant pas affiliés à un parti, surtout dans les petites communes rurales, de nombreuses communes n'ont pas de données politiques, ce qui est normal. Toutefois, même certaines grandes villes où la couleur politique du maire est connue ne sont pas correctement renseignées pour le moment.</li>
+        <li>La base de pistes cyclables utilisée, maintenue par Géovelo, se base sur des enregistrements de contributeurs volontaires dans OpenStreetMap — des erreurs ou des manques sont possibles.</li>
+      </ul>
+
+      <h4>Sources des données</h4>
+
+      <p><strong>Pistes cyclables</strong> — <a href="https://www.data.gouv.fr/datasets/amenagements-cyclables-france-metropolitaine" target="_blank" rel="noopener">data.gouv.fr</a><br>
+      Aménagements cyclables de France métropolitaine numérisés dans OpenStreetMap et traités par <a href="https://geovelo.app/fr/" target="_blank" rel="noopener">Geovelo</a>. Versions du 8 juillet 2021 et du 2 mars 2026.</p>
+
+      <p><strong>Forme des communes</strong> — <a href="https://adresse.data.gouv.fr/data/contours-administratifs/latest/geojson/communes-5m.geojson" target="_blank" rel="noopener">Base Adresse Nationale</a><br>
+      Contours administratifs des communes à une précision de 5 m (2025).</p>
+
+      <p><strong>Kilométrage des routes par commune</strong> — <a href="https://www.data.gouv.fr/datasets/kilometrage-des-types-de-routes-repartis-par-communes-1" target="_blank" rel="noopener">data.gouv.fr</a><br>
+      Produit par <a href="https://www.simul-impact.fr/" target="_blank" rel="noopener">Simul'impact</a> à partir des données OpenStreetMap (janvier 2026).</p>
+
+      <p><strong>Étiquette politique des mairies</strong> — <a href="https://www.data.gouv.fr/datasets/communes-enrichies-avec-la-nuance-politique-france" target="_blank" rel="noopener">data.gouv.fr</a><br>
+      Nuances politiques issues des élections municipales 2020, produites par <a href="https://datactivist.coop/fr/" target="_blank" rel="noopener">Datactivist</a>.</p>
+
+      <p><strong>Population par commune</strong> — <a href="https://www.insee.fr/fr/statistiques/8680726?sommaire=8681011" target="_blank" rel="noopener">INSEE</a><br>
+      Fichier d'ensemble des populations légales, recensement 2023.</p>
+
+      <p><strong>Codes postaux</strong> — <a href="https://www.data.gouv.fr/datasets/base-officielle-des-codes-postaux" target="_blank" rel="noopener">La Poste</a><br>
+      Base officielle des codes postaux (février 2026).</p>
+    </div>
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

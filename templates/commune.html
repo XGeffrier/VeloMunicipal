@@ -1,200 +1,175 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>{{ data.nom }}</title>
-<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+{% extends "base.html" %}
 
+{% block title %}Vélo Municipal - {{ data.nom }}{% endblock %}
+
+{% block extra_head %}
 <style>
-:root {
+  :root {
     --primary: {{ data.couleur_principale }};
-    --secondary: {{ data.couleur_secondaire or "#666" }};
-}
+    --primary-dark: color-mix(in srgb, var(--primary) 68%, #000 32%);
+  }
 
-body {
-    font-family: Inter, system-ui, sans-serif;
-    background: linear-gradient(
-        135deg,
-        var(--primary) 0%,
-        #ffffff 100%
-    );
+  body {
+    background: linear-gradient(135deg, var(--primary) 0%, #ffffff 100%);
     background-attachment: fixed;
-}
+  }
 
-.container{
-    padding:16px;
-    max-width:1000px;
-    margin:auto;
-}
+  .container {
+    padding: 16px;
+    max-width: 1000px;
+    margin: auto;
+  }
 
-.card{
-    padding:20px;
-}
+  .card { padding: 20px; }
 
-/* 🔥 titre accentué */
-h1{
-    margin:0;
-    color: var(--primary);
-}
+  h1 {
+    margin: 0;
+    color: var(--primary-dark);
+  }
 
-/* grille */
-.grid{
-    display:grid;
+  .grid {
+    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap:16px;
-    margin-top:25px;
-}
+    gap: 16px;
+    margin-top: 25px;
+  }
 
-.item{
-    background:#f8fafc;
-    padding:16px;
-    border-radius:12px;
-    border-left:5px solid var(--primary);
-
-    /* 🔥 IMPORTANT */
+  .item {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 12px;
+    border-left: 5px solid var(--primary);
     min-width: 0;
     overflow-wrap: break-word;
-}
+  }
 
-.label{
-    font-size:13px;
-    opacity:0.6;
-}
+  .label {
+    font-size: 13px;
+    opacity: 0.6;
+  }
 
-.value {
-    font-size:18px;
-    font-weight:600;
-
+  .value {
+    font-size: 18px;
+    font-weight: 600;
     word-wrap: break-word;
     overflow-wrap: break-word;
-}
+  }
 
-/* 🔥 bloc évolution très visible */
-.evolution{
-    margin-top:30px;
-    padding:25px;
-    border-radius:16px;
+  .ratio-inline {
+    font-size: 14px;
+    font-weight: 400;
+    color: #888;
+  }
 
+  .evolution {
+    margin-top: 30px;
+    padding: 25px;
+    border-radius: 16px;
     background: var(--primary);
-    color:white;
+    color: white;
+    text-align: center;
+  }
 
-    text-align:center;
-}
+  .big {
+    font-size: 36px;
+    font-weight: 800;
+  }
 
-.big{
-    font-size:36px;
-    font-weight:800;
-}
+  .arrow {
+    font-size: 32px;
+    margin-left: 10px;
+  }
 
-.arrow{
-    font-size:32px;
-    margin-left:10px;
-}
+  /* ── Footer (bas du dégradé = blanc, texte sombre) ── */
+  .site-footer { color: rgba(0, 0, 0, 0.5); }
+  .site-footer .footer-how { color: rgba(0, 0, 0, 0.7); }
+  .site-footer .footer-links a { color: rgba(0, 0, 0, 0.5); }
 
-/* ratios en accent secondaire */
-.ratio {
-    color: var(--secondary);
-    font-weight:600;
-}
-
-@media (max-width:700px){
-    .grid{
-        grid-template-columns:1fr;
-    }
-}
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+  }
 </style>
-</head>
+{% endblock %}
 
-<body>
-
+{% block content %}
 <div class="container">
-<div class="card">
+  <div class="card">
 
-<h1>{{ data.nom }}</h1>
+    <h1>{{ data.nom }}</h1>
 
-<div class="grid">
+    <div class="grid">
 
-{% if is_valid(data.superficie) %}
-<div class="item">
-<div class="label">Superficie</div>
-<div class="value">{{ "%.2f"|format(data.superficie) }} km²</div>
+      {% if is_valid(data.superficie) %}
+      <div class="item">
+        <div class="label">Superficie</div>
+        <div class="value">{{ "%.2f"|format(data.superficie) }} km²</div>
+      </div>
+      {% endif %}
+
+      {% if is_valid(data.population) %}
+      <div class="item">
+        <div class="label">Population</div>
+        <div class="value">{{ "%.0f"|format(data.population) }}</div>
+      </div>
+      {% endif %}
+
+      {% if is_valid(data.longueur_route) %}
+      <div class="item">
+        <div class="label">Longueur de routes</div>
+        <div class="value">{{ "%.0f"|format(data.longueur_route) }} km</div>
+      </div>
+      {% endif %}
+
+      {% if is_valid(data.longueur_piste_2021) %}
+      <div class="item">
+        <div class="label">Pistes cyclables 2021</div>
+        <div class="value">
+          {{ "%.0f"|format(data.longueur_piste_2021) }} km
+          {% if ratio_2021 %}
+          <span class="ratio-inline">({{ "%.0f"|format(ratio_2021) }} % des routes)</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if is_valid(data.longueur_piste_2026) %}
+      <div class="item">
+        <div class="label">Pistes cyclables 2026</div>
+        <div class="value">
+          {{ "%.0f"|format(data.longueur_piste_2026) }} km
+          {% if ratio_2026 %}
+          <span class="ratio-inline">({{ "%.0f"|format(ratio_2026) }} % des routes)</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if data.famille_nuance %}
+      <div class="item">
+        <div class="label">Famille politique</div>
+        <div class="value">{{ data.famille_nuance }}</div>
+      </div>
+      {% endif %}
+
+      {% if data.nuance_politique_complete %}
+      <div class="item">
+        <div class="label">Nuance politique</div>
+        <div class="value">{{ data.nuance_politique_complete }}</div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    {% if evo_pct is not none %}
+    <div class="evolution">
+      Évolution des pistes cyclables
+      <div class="big">
+        {{ "%.1f"|format(evo_pct) }} %
+        <span class="arrow">{% if evo_direction == "up" %}↗{% else %}↘{% endif %}</span>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
 </div>
-{% endif %}
-
-{% if is_valid(data.population) %}
-<div class="item">
-<div class="label">Population</div>
-<div class="value">{{ data.population }}</div>
-</div>
-{% endif %}
-
-{% if is_valid(data.longueur_route) %}
-<div class="item">
-<div class="label">Longueur de routes</div>
-<div class="value">{{ "%.1f"|format(data.longueur_route) }} km</div>
-</div>
-{% endif %}
-
-{% if is_valid(data.longueur_piste_2021) %}
-<div class="item">
-<div class="label">Pistes cyclables 2021</div>
-<div class="value">{{ "%.1f"|format(data.longueur_piste_2021) }} km</div>
-</div>
-{% endif %}
-
-{% if is_valid(data.longueur_piste_2026) %}
-<div class="item">
-<div class="label">Pistes cyclables 2026</div>
-<div class="value">{{ "%.1f"|format(data.longueur_piste_2026) }} km</div>
-</div>
-{% endif %}
-
-{% if ratio_2021 %}
-<div class="item">
-<div class="label">Ratio 2021</div>
-<div class="value ratio">{{ "%.1f"|format(ratio_2021) }} %</div>
-</div>
-{% endif %}
-
-{% if ratio_2026 %}
-<div class="item">
-<div class="label">Ratio 2026</div>
-<div class="value ratio">{{ "%.1f"|format(ratio_2026) }} %</div>
-</div>
-{% endif %}
-
-{% if data.famille_nuance %}
-<div class="item">
-<div class="label">Famille politique</div>
-<div class="value">{{ data.famille_nuance }}</div>
-</div>
-{% endif %}
-
-{% if data.nuance_politique_complete %}
-<div class="item">
-<div class="label">Nuance politique</div>
-<div class="value">{{ data.nuance_politique_complete }}</div>
-</div>
-{% endif %}
-
-</div>
-
-{% if evo_pct is not none %}
-<div class="evolution">
-Évolution des pistes cyclables
-
-<div class="big">
-{{ "%.1f"|format(evo_pct) }} %
-<span class="arrow">
-{% if evo_direction == "up" %}↗{% else %}↘{% endif %}
-</span>
-</div>
-
-</div>
-{% endif %}
-
-</div>
-</div>
-
-</body>
-</html>
+{% endblock %}

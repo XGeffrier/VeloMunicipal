@@ -1,160 +1,205 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Recherche commune</title>
-<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+{% extends "base.html" %}
 
+{% block title %}Vélo Municipal{% endblock %}
+
+{% block extra_head %}
 <style>
-body {
-    font-family: Inter, system-ui, sans-serif;
-    background: linear-gradient(135deg,#f5f7fb,#e8ecf5);
-    margin:0;
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:flex-start;
-    padding-top:12vh;
-}
+  body {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 12vh;
+  }
 
-.card {
-    background:white;
-    padding:28px;
-    border-radius:18px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.08);
-    width:90%;
-    max-width:520px;
-}
+  /* ── Animated background ── */
+  #bg-a, #bg-b {
+    position: fixed;
+    inset: 0;
+    will-change: transform;
+  }
+  #bg-a { z-index: -1; }
+  #bg-b { z-index: -2; transform: translateY(-100%); }
 
-h2 {
-    margin-top:0;
-}
+  /* ── Card ── */
+  .card {
+    background: white;
+    padding: 28px;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 520px;
+  }
 
-input {
-    width:100%;
-    padding:14px;
-    font-size:16px;
-    border-radius:10px;
-    border:1px solid #ddd;
+  h2 { margin-top: 0; color: #222; }
 
-    box-sizing:border-box; /* 🔥 FIX */
-}
+  input {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus {
+    border-color: #4a6cff;
+    box-shadow: 0 0 0 3px rgba(74, 108, 255, 0.15);
+  }
 
-input:focus {
-    border-color:#4a6cff;
-    box-shadow:0 0 0 3px rgba(74,108,255,0.15);
-}
+  .results {
+    margin-top: 10px;
+    max-height: 200px;
+    overflow: auto;
+  }
 
-
-
-.results {
-    margin-top:10px;
-    max-height:200px;
-    overflow:auto;
-}
-
-/* 🔥 mobile fix */
-.item {
-    padding:12px;
-    border-radius:8px;
-    cursor:pointer;
-
+  .result-item {
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
     word-break: break-word;
-}
+  }
+  .result-item:hover { background: #f0f3ff; }
 
-.item:hover {
-    background:#f0f3ff;
-}
+  #btn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #4a6cff;
+    color: white;
+    font-size: 16px;
+    font-family: inherit;
+    cursor: pointer;
+    display: none;
+  }
+  #btn:hover { background: #3a5ce0; }
 
-button {
-    margin-top:18px;
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    background:#4a6cff;
-    color:white;
-    font-size:16px;
-    cursor:pointer;
-    display:none;
-}
+  /* ── Footer (white text on colored background) ── */
+  /* ── Page title ── */
+  .page-title {
+    color: white;
+    font-size: 36px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 24px;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+
+  /* ── Footer (white text on colored background) ── */
+  .site-footer { color: rgba(255, 255, 255, 0.85); }
+  .site-footer .footer-how { color: white; }
+  .site-footer .footer-links a { color: rgba(255, 255, 255, 0.75); }
 </style>
-</head>
+{% endblock %}
 
-<body>
+{% block bg %}
+<div id="bg-a"></div>
+<div id="bg-b"></div>
+{% endblock %}
 
+{% block content %}
+<div class="page-title">Vélo Municipal</div>
 <div class="card">
-    <h2>Commencez à taper le nom d'une commune ou d'un code postal</h2>
-
-    <input id="search" placeholder="37000 Tours">
-
-    <div class="results" id="results"></div>
-
-    <form id="form">
-        <button id="btn">Voir</button>
-    </form>
+  <h2>Code postal / Commune</h2>
+  <input id="search" placeholder="37000 Tours" autocomplete="off">
+  <div class="results" id="results"></div>
+  <form id="form">
+    <button id="btn" type="submit">Voir</button>
+  </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-const communes = {{ communes|tojson }};
-const input = document.getElementById("search");
-const results = document.getElementById("results");
-const btn = document.getElementById("btn");
-const form = document.getElementById("form");
+  // ── Search logic ──
+  const communes = {{ communes | tojson }};
+  const input    = document.getElementById("search");
+  const results  = document.getElementById("results");
+  const btn      = document.getElementById("btn");
+  const form     = document.getElementById("form");
 
-let selected = null;
+  function normalize(str) {
+    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
 
-function normalize(str){
-    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-
-function score(query, text){
+  function score(query, text) {
     query = normalize(query);
-    text = normalize(text);
-
-    if(text.includes(query)) return 3;
-
+    text  = normalize(text);
+    if (text.includes(query)) return 3;
     let qi = 0;
-    for(let i=0;i<text.length && qi<query.length;i++){
-        if(text[i] === query[qi]) qi++;
+    for (let i = 0; i < text.length && qi < query.length; i++) {
+      if (text[i] === query[qi]) qi++;
     }
     return qi === query.length ? 2 : 0;
-}
+  }
 
-input.addEventListener("input", () => {
+  input.addEventListener("input", () => {
     const q = input.value.trim();
     results.innerHTML = "";
     btn.style.display = "none";
-    selected = null;
 
-    if(q.length < 1) return;
+    if (q.length < 1) return;
 
-    let matches = communes
-        .map(c => {
-            const label = `${c.code_postal} ${c.nom}`;
-            return { ...c, label, score: score(q,label) };
-        })
-        .filter(c => c.score > 0)
-        .sort((a,b)=>b.score-a.score)
-        .slice(0,8);
-
-    matches.forEach(c=>{
+    communes
+      .map(c => ({ ...c, label: `${c.code_postal} ${c.nom}`, score: score(q, `${c.code_postal} ${c.nom}`) }))
+      .filter(c => c.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .forEach(c => {
         const div = document.createElement("div");
-        div.className="item";
-        div.textContent=c.label;
-
-        div.onclick=()=>{
-            input.value=c.label;
-            selected=c;
-            results.innerHTML="";
-            btn.style.display="block";
-            form.action="/commune/"+c.insee;
+        div.className = "result-item";
+        div.textContent = c.label;
+        div.onclick = () => {
+          input.value = c.label;
+          results.innerHTML = "";
+          btn.style.display = "block";
+          form.action = "/commune/" + c.insee;
         };
-
         results.appendChild(div);
-    });
-});
-</script>
+      });
+  });
 
-</body>
-</html>
+  // ── Animated background ──
+  // Couleurs politiques : bleu, vert, rose, orange, rouge
+  const colors = ['#3b5bdb', '#2f9e44', '#e64980', '#f76707', '#c92a2a'];
+  let idx = 0;
+
+  const bgA = document.getElementById('bg-a');
+  const bgB = document.getElementById('bg-b');
+
+  bgA.style.background = colors[0];
+
+  function slideToNext() {
+    idx = (idx + 1) % colors.length;
+
+    // Positionne bgB (nouvelle couleur) au-dessus du viewport, sans transition
+    bgB.style.transition  = 'none';
+    bgB.style.transform   = 'translateY(-100%)';
+    bgB.style.background  = colors[idx];
+    bgB.style.zIndex      = '-1';
+    bgA.style.zIndex      = '-2';
+
+    // Lance le glissement vers le bas
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bgB.style.transition = 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)';
+        bgB.style.transform  = 'translateY(0)';
+      });
+    });
+
+    // Une fois l'animation terminée, bgA reprend le rôle de fond permanent
+    setTimeout(() => {
+      bgA.style.background = colors[idx];
+      bgA.style.zIndex     = '-1';
+      bgB.style.zIndex     = '-2';
+      bgB.style.transition = 'none';
+      bgB.style.transform  = 'translateY(-100%)';
+    }, 1100);
+  }
+
+  setInterval(slideToNext, 5000);
+</script>
+{% endblock %}
