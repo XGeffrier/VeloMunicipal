@@ -3,7 +3,7 @@ import os
 
 from flask import Flask, render_template, send_from_directory, request
 
-from back import get_all_communes, get_data_of, is_valid
+from back import get_all_communes, get_data_of, is_valid, load_on_startup
 
 if os.getenv("GOOGLE_RUNTIME"):
     import google.cloud.logging
@@ -16,7 +16,7 @@ else:
     logging.getLogger().setLevel(logging.DEBUG)
     logging.info("Local logging enabled")
 app = Flask(__name__, static_folder="static")
-
+load_on_startup()
 
 @app.route("/")
 def index():

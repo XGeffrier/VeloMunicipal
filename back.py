@@ -1,7 +1,22 @@
+"""
+This file is the only one imported by Flask app. It gives high-level access to the data.
+"""
+import functools
+
 import pandas as pd
 
 from data_loader import DataLoader
 
+
+def load_on_startup():
+    """
+    Load once the useful dataframes. Call that on instance startup to speed up the first requests.
+    """
+    DataLoader.get_processed_postal_df()
+    DataLoader.get_merged_df()
+    get_all_communes()
+
+@functools.cache
 def get_all_communes() -> list[dict]:
     """
     Return a list of communes, each commune being a dict with the following keys:
@@ -11,7 +26,7 @@ def get_all_communes() -> list[dict]:
             for _, row in DataLoader.get_processed_postal_df().iterrows()]
 
 
-def get_data_of(insee_code: str) -> dict  | None:
+def get_data_of(insee_code: str) -> dict | None:
     """
     Output dict keys:
     'insee', 'superficie', 'nom', 'population', 'nuance_politique', 'famille_nuance', 'nuance_politique_complete',
