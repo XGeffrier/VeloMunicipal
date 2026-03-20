@@ -1,48 +1,83 @@
+import logging
+
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry.point import Point
 
 
-def enrich_towns_with_area(towns_gpd: gpd.GeoDataFrame) -> pd.DataFrame:
+def enrich_towns_with_area(towns_gdf: gpd.GeoDataFrame) -> pd.DataFrame:
     """
     Add superficie info to a towns gpd. Remove geometry info to turn GeoDataFrame into DataFrame.
 
     Input columns: 'insee', 'geometry'
     Output columns: 'insee', 'superficie'
     """
-    projected_towns_gpd = towns_gpd.to_crs(epsg=27562)
-    projected_towns_gpd["superficie"] = projected_towns_gpd["geometry"].area / 1_000_000
+    towns_gdf["superficie"] = towns_gdf["geometry"].area / 1_000_000
 
-    towns_with_area_df = pd.DataFrame(projected_towns_gpd.drop(columns='geometry'))
+    towns_with_area_df = pd.DataFrame(towns_gdf.drop(columns='geometry'))
     return towns_with_area_df
 
 
-def enrich_geovelo_with_length(geovelo_gpd: gpd.GeoDataFrame) -> pd.DataFrame:
+def group_geovelo_by_insee_code(geovelo_single_year_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
-    Add length info to a geovelo gpd. Remove geometry info to turn GeoDataFrame into DataFrame.
-
-    Input columns: 'insee_d', 'insee_g', 'geometry'
-    Output columns: 'insee_d', 'insee_g', 'longueur_piste'
+    Input colomns : 'insee_d', 'insee_g', 'geometry'
+    Output columns: 'insee', 'geometry'
     """
-    return pd.DataFrame({"longueur_piste": geovelo_gpd.to_crs(epsg=27562)["geometry"].length / 1000,
-                         "insee_d": geovelo_gpd["insee_d"],
-                         "insee_g": geovelo_gpd["insee_g"]})
+    geovelo_single_year_gdf = gpd.GeoDataFrame(pd.concat([
+        geovelo_single_year_gdf[["insee_g", "geometry"]].rename(columns={"insee_g": "insee"}),
+        geovelo_single_year_gdf[["insee_d", "geometry"]].rename(columns={"insee_d": "insee"})
+    ], ignore_index=True))
+    geovelo_single_year_gdf = geovelo_single_year_gdf.dissolve(by='insee', aggfunc='first')
+    geovelo_single_year_gdf = geovelo_single_year_gdf.reset_index()
+    return geovelo_single_year_gdf
 
 
-def group_geovelo_by_insee_code(geovelo_df: pd.DataFrame) -> pd.DataFrame:
+def combine_geovelo_years(geovelo_gdf_2021: gpd.GeoDataFrame, geovelo_gdf_2026: gpd.GeoDataFrame) -> pd.DataFrame:
     """
-    Group geovelo by insee code.
-
-    Input columns: 'insee_d', 'insee_g', 'longueur_piste'
-    Output columns: 'insee', 'longueur_piste'
+    Input columns : 'insee', 'geometry' (2 dataframes, insee are unique)
+    Output columns: 'insee', 'geometry' (3 dataframes)
     """
-    geovelo_df = (pd.concat([
-        geovelo_df[["insee_g", "longueur_piste"]].rename(columns={"insee_g": "insee"}),
-        geovelo_df[["insee_d", "longueur_piste"]].rename(columns={"insee_d": "insee"})
-    ], ignore_index=True)
-                  .groupby("insee", as_index=False)["longueur_piste"]
-                  .sum())
-    geovelo_df["longueur_piste"] = geovelo_df["longueur_piste"] / 2
-    return geovelo_df
+    merged = geovelo_gdf_2021.merge(geovelo_gdf_2026, on='insee', how='outer', suffixes=('_2021', '_2026'))
+
+    tolerance = 20  # meters
+
+    g21 = gpd.GeoSeries(merged['geometry_2021'], crs=geovelo_gdf_2021.crs)
+    g26 = gpd.GeoSeries(merged['geometry_2026'], crs=geovelo_gdf_2026.crs)
+
+    # Identify rows where one side is missing
+    logging.info("Identify rows where one side is missing")
+    null_21 = g21.is_empty | g21.isna()
+    null_26 = g26.is_empty | g26.isna()
+    both_present = ~null_21 & ~null_26
+    g21_valid = g21.where(both_present, other=Point())
+    g26_valid = g26.where(both_present, other=Point())
+
+    logging.info("Buffer 1")
+    buffered_21 = g21_valid.buffer(tolerance, resolution=1)
+    logging.info("Buffer 2")
+    buffered_26 = g26_valid.buffer(tolerance, resolution=1)
+
+    logging.info("Difference 1")
+    only_2026 = g26_valid.difference(buffered_21)
+    logging.info("Difference 2")
+    only_2021 = g21_valid.difference(buffered_26)
+    logging.info("Difference 3")
+    common = g21_valid.union(g26_valid).difference(only_2026).difference(only_2021)
+
+    logging.info("Compute lengths")
+    only_2026_length = only_2026.length / 1000
+    only_2021_length = only_2021.length / 1000
+    common_length = common.length / 1000
+
+    # create geodataframe with 'insee' column and 'geometry' column for each of the 3 geometries
+    # common_gdf = gpd.GeoDataFrame(pd.DataFrame({"insee": merged["insee"], "geometry": common}))
+    # only_2026_gdf = gpd.GeoDataFrame(pd.DataFrame({"insee": merged["insee"], "geometry": only_2026}))
+    # only_2021_gdf = gpd.GeoDataFrame(pd.DataFrame({"insee": merged["insee"], "geometry": only_2021}))
+
+    logging.info("Return dataframe")
+    return pd.DataFrame({"longueur_piste_2026": only_2026_length + common_length,
+                         "longueur_piste_2021": only_2021_length + common_length,
+                         "insee": merged["insee"]})
 
 
 def enrich_roads_with_total_length(roads_df: pd.DataFrame) -> pd.DataFrame:
@@ -59,6 +94,7 @@ def enrich_roads_with_total_length(roads_df: pd.DataFrame) -> pd.DataFrame:
                                            roads_df["route_locale_km"] +
                                            roads_df["rue_residentielle_km"],
                          "insee": roads_df["insee"]})
+
 
 def enrich_postal_with_name(postal_df: pd.DataFrame, population_df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -77,8 +113,7 @@ def merge_all_dfs(towns_df: pd.DataFrame,
                   roads_df: pd.DataFrame,
                   postal_df: pd.DataFrame,
                   colors_df: pd.DataFrame,
-                  geovelo_2021_df: pd.DataFrame,
-                  geovelo_2026_df: pd.DataFrame) -> pd.DataFrame:
+                  geovelo_lengths_df: pd.DataFrame) -> pd.DataFrame:
     """
     Merged non-geometrical informations for each of the top n towns. Use local file system as cache.
 
@@ -87,31 +122,28 @@ def merge_all_dfs(towns_df: pd.DataFrame,
     'longueur_piste_2021', 'longueur_piste_2026', 'couleur_principale', 'couleur_secondaire', 'longueur_route',
     'code_postal'
     """
-    # merge dataframes on insee code (only keep codes that are in all datasets)
-    merged_df = towns_df.merge(population_df, on="insee", how="inner")
-    merged_df = merged_df.merge(politics_df, on="insee", how="inner")
-    merged_df = merged_df.merge(roads_df, on="insee", how="inner")
-    merged_df = merged_df.merge(postal_df, on="insee", how="inner")
+    # merge dataframes on insee code
+    merged_df = postal_df.merge(politics_df, on="insee", how="left").fillna('')
     merged_df = merged_df.merge(colors_df, on="nuance_politique", how="inner")
-    merged_df = (merged_df.merge(geovelo_2021_df, on="insee", how="left")
-                 .rename(columns={"longueur_piste": "longueur_piste_2021"}))
-    merged_df = (merged_df.merge(geovelo_2026_df, on="insee", how="left")
-                 .rename(columns={"longueur_piste": "longueur_piste_2026"}))
+    merged_df = merged_df.merge(geovelo_lengths_df, on="insee", how="left").fillna(0)
+    merged_df = merged_df.merge(population_df, on="insee", how="left")
+    merged_df = merged_df.merge(roads_df, on="insee", how="inner")
+    merged_df = merged_df.merge(towns_df, on="insee", how="inner")
     return merged_df
 
 
 #### DEPRECATED ####
 
-def enrich_geovelo_gpd_with_town(geovelo_gpd: gpd.GeoDataFrame,
-                                 towns_gpd: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def enrich_geovelo_gdf_with_town(geovelo_gdf: gpd.GeoDataFrame,
+                                 towns_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
-    NOTE: this was done before acknowledging that town information is already in geovelo_gpd, so this function is not
+    NOTE: this was done before acknowledging that town information is already in geovelo_gdf, so this function is not
     used anymore.
 
     Add town info to a geovelo gpd. Filter rows that are not in a town.
     """
-    projected_geovelo_gpd = geovelo_gpd.to_crs(epsg=27562)
-    projected_towns_gpd = towns_gpd.to_crs(epsg=27562)
-    joined_gpd = projected_geovelo_gpd.sjoin_nearest(projected_towns_gpd, how="left", distance_col="distance_to_town")
-    joined_gpd = joined_gpd[joined_gpd["distance_to_town"] == 0]
-    return joined_gpd
+    projected_geovelo_gdf = geovelo_gdf.to_crs(epsg=27562)
+    projected_towns_gdf = towns_gdf.to_crs(epsg=27562)
+    joined_gdf = projected_geovelo_gdf.sjoin_nearest(projected_towns_gdf, how="left", distance_col="distance_to_town")
+    joined_gdf = joined_gdf[joined_gdf["distance_to_town"] == 0]
+    return joined_gdf

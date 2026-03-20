@@ -1,7 +1,8 @@
 import logging
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory, request
+
 from back import get_all_communes, get_data_of, is_valid
 
 if os.getenv("GOOGLE_RUNTIME"):
@@ -14,7 +15,7 @@ if os.getenv("GOOGLE_RUNTIME"):
 else:
     logging.getLogger().setLevel(logging.DEBUG)
     logging.info("Local logging enabled")
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 
 @app.route("/")
@@ -63,9 +64,9 @@ def commune(insee_code):
 
 
 @app.route('/robots.txt')
-def robots():
-    """Route pour servir le fichier robots.txt"""
-    return "User-agent: *\nAllow: /", 200, {'Content-Type': 'text/plain; charset=utf-8'}
+@app.route('/sitemap.xml')
+def static_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
 
 
 if __name__ == "__main__":

@@ -3,24 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <title>Recherche commune</title>
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
 <style>
 body {
     font-family: Inter, system-ui, sans-serif;
     background: linear-gradient(135deg,#f5f7fb,#e8ecf5);
     margin:0;
-    height:100vh;
+    min-height:100vh;
     display:flex;
-    align-items:center;
     justify-content:center;
+    align-items:flex-start;
+    padding-top:12vh;
 }
 
 .card {
     background:white;
-    padding:40px;
+    padding:28px;
     border-radius:18px;
     box-shadow:0 10px 30px rgba(0,0,0,0.08);
-    width:95%;
+    width:90%;
     max-width:520px;
 }
 
@@ -31,10 +33,11 @@ h2 {
 input {
     width:100%;
     padding:14px;
+    font-size:16px;
     border-radius:10px;
     border:1px solid #ddd;
-    font-size:16px;
-    outline:none;
+
+    box-sizing:border-box; /* 🔥 FIX */
 }
 
 input:focus {
@@ -42,16 +45,21 @@ input:focus {
     box-shadow:0 0 0 3px rgba(74,108,255,0.15);
 }
 
+
+
 .results {
     margin-top:10px;
-    max-height:220px;
+    max-height:200px;
     overflow:auto;
 }
 
+/* 🔥 mobile fix */
 .item {
-    padding:10px;
+    padding:12px;
     border-radius:8px;
     cursor:pointer;
+
+    word-break: break-word;
 }
 
 .item:hover {
