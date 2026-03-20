@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 
 from data_enricher import enrich_towns_with_area, enrich_roads_with_total_length, enrich_geovelo_with_length, \
-    group_geovelo_by_insee_code, merge_all_dfs, enrich_postal_with_name
+    group_geovelo_by_insee_code, merge_all_dfs, enrich_postal_with_name, merge_geovelo_years
 from storage import StorageClient
 
 
@@ -77,15 +77,17 @@ class DataLoader:
     _raw_politics_df = None
     _raw_roads_df = None
     _raw_postal_df = None
-    _raw_geovelo_gpd_2021 = None
-    _raw_geovelo_gpd_2026 = None
-    _raw_towns_gpd = None
+    _raw_geovelo_gdf_2021 = None
+    _raw_geovelo_gdf_2026 = None
+    _raw_towns_gdf = None
     _colors_df = None
     _processed_town_df = None
     _processed_roads_df = None
     _processed_postal_df = None
-    _processed_geovelo_df_2021 = None
-    _processed_geovelo_df_2026 = None
+    _processed_geovelo_gdf_2021 = None
+    _processed_geovelo_gdf_2026 = None
+    _processed_unique_geovelo_gdf = None
+    _processed_geovelo_length_df = None
     _merged_df = None
 
     @classmethod
@@ -192,46 +194,46 @@ class DataLoader:
         return cls._raw_postal_df
 
     @classmethod
-    def get_raw_geovelo_gpds(cls) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    def get_raw_geovelo_gdfs(cls) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
         """
         Output columns: 'insee_d', 'insee_g', 'geometry'
 
         For Paris, Lyon and Marseille, original files use insee codes of arrondissements, we use main code.
         """
-        if cls._raw_geovelo_gpd_2021 is None or cls._raw_geovelo_gpd_2026 is None:
-            geovelo_gpd_2021 = gpd.read_file(cls._get_local_file_path("geovelo_2021_07"))
-            geovelo_gpd_2026 = gpd.read_file(cls._get_local_file_path("geovelo_2026_03"))
+        if cls._raw_geovelo_gdf_2021 is None or cls._raw_geovelo_gdf_2026 is None:
+            geovelo_gdf_2021 = gpd.read_file(cls._get_local_file_path("geovelo_2021_07"))
+            geovelo_gdf_2026 = gpd.read_file(cls._get_local_file_path("geovelo_2026_03"))
 
             columns_to_keep = ["code_com_d", "code_com_g", "geometry"]
             renaming = {"code_com_d": "insee_d", "code_com_g": "insee_g"}
-            geovelo_gpd_2021 = geovelo_gpd_2021[columns_to_keep].rename(columns=renaming)
-            geovelo_gpd_2026 = geovelo_gpd_2026[columns_to_keep].rename(columns=renaming)
+            geovelo_gdf_2021 = geovelo_gdf_2021[columns_to_keep].rename(columns=renaming)
+            geovelo_gdf_2026 = geovelo_gdf_2026[columns_to_keep].rename(columns=renaming)
 
             # Handle PLM : convert arronds code to main insee
             for town_name, town_infos in cls.PLM_INFOS.items():
                 for col_name in ("insee_d", "insee_g"):
-                    mask = geovelo_gpd_2021[col_name].isin(town_infos["arronds"])
-                    geovelo_gpd_2021.loc[mask, col_name] = town_infos["insee"]
-                    mask = geovelo_gpd_2026[col_name].isin(town_infos["arronds"])
-                    geovelo_gpd_2026.loc[mask, col_name] = town_infos["insee"]
+                    mask = geovelo_gdf_2021[col_name].isin(town_infos["arronds"])
+                    geovelo_gdf_2021.loc[mask, col_name] = town_infos["insee"]
+                    mask = geovelo_gdf_2026[col_name].isin(town_infos["arronds"])
+                    geovelo_gdf_2026.loc[mask, col_name] = town_infos["insee"]
 
-            cls._raw_geovelo_gpd_2021 = geovelo_gpd_2021
-            cls._raw_geovelo_gpd_2026 = geovelo_gpd_2026
-        return cls._raw_geovelo_gpd_2021, cls._raw_geovelo_gpd_2026
+            cls._raw_geovelo_gdf_2021 = geovelo_gdf_2021.to_crs(epsg=27562)
+            cls._raw_geovelo_gdf_2026 = geovelo_gdf_2026.to_crs(epsg=27562)
+        return cls._raw_geovelo_gdf_2021, cls._raw_geovelo_gdf_2026
 
     @classmethod
-    def get_raw_towns_gpd(cls) -> gpd.GeoDataFrame:
+    def get_raw_towns_gdf(cls) -> gpd.GeoDataFrame:
         """
         Output columns: 'insee', 'geometry'
 
         Raw file has data for both full PLM townns and each arrondissement, we leave it as it is.
         """
-        if cls._raw_towns_gpd is None:
-            towns_gpd = gpd.read_file(cls._get_local_file_path("towns_geo"))
+        if cls._raw_towns_gdf is None:
+            towns_gdf = gpd.read_file(cls._get_local_file_path("towns_geo"))
             columns_to_keep = ["code", "geometry"]
             renaming = {"code": "insee"}
-            cls._raw_towns_gpd = towns_gpd[columns_to_keep].rename(columns=renaming)
-        return cls._raw_towns_gpd
+            cls._raw_towns_gdf = towns_gdf[columns_to_keep].rename(columns=renaming).to_crs(epsg=27562)
+        return cls._raw_towns_gdf
 
     @classmethod
     def get_colors_df(cls) -> pd.DataFrame:
@@ -268,7 +270,7 @@ class DataLoader:
         """
         if cls._processed_town_df is None:
             cls._processed_town_df = pd.read_parquet(
-                cls._get_local_file_path("towns_df", lambda: enrich_towns_with_area(cls.get_raw_towns_gpd()))
+                cls._get_local_file_path("towns_df.parquet", lambda: enrich_towns_with_area(cls.get_raw_towns_gdf()))
             )
         return cls._processed_town_df
 
@@ -279,28 +281,56 @@ class DataLoader:
         """
         if cls._processed_roads_df is None:
             cls._processed_roads_df = pd.read_parquet(
-                cls._get_local_file_path("roads_df", lambda: enrich_roads_with_total_length(cls.get_raw_roads_df()))
+                cls._get_local_file_path("roads_df.parquet",
+                                         lambda: enrich_roads_with_total_length(cls.get_raw_roads_df()))
             )
         return cls._processed_roads_df
 
     @classmethod
-    def get_processed_geovelo_dfs(cls) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def get_processed_geovelo_gdfs(cls) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
         """
-        Output columns: 'insee', 'longueur_route'
+        Output columns: 'insee', 'geometry'
         """
-        if cls._processed_geovelo_df_2021 is None or cls._processed_geovelo_df_2026 is None:
-            geovelo_2021_gpd, geovelo_2026_gpd = cls.get_raw_geovelo_gpds()
-            cls._processed_geovelo_df_2021 = pd.read_parquet(
+        if cls._processed_geovelo_gdf_2021 is None or cls._processed_geovelo_gdf_2026 is None:
+            geovelo_2021_gdf, geovelo_2026_gdf = cls.get_raw_geovelo_gdfs()
+            cls._processed_geovelo_gdf_2021 = gpd.read_file(
                 cls._get_local_file_path(
-                    "geovelo_2021_df",
-                    lambda: group_geovelo_by_insee_code(enrich_geovelo_with_length(geovelo_2021_gpd)))
+                    "geovelo_2021_gdf.geojson",
+                    lambda: group_geovelo_by_insee_code(geovelo_2021_gdf))
             )
-            cls._processed_geovelo_df_2026 = pd.read_parquet(
+            cls._processed_geovelo_gdf_2026 = gpd.read_file(
                 cls._get_local_file_path(
-                    "geovelo_2026_df",
-                    lambda: group_geovelo_by_insee_code(enrich_geovelo_with_length(geovelo_2026_gpd)))
+                    "geovelo_2026_gdf.geojson",
+                    lambda: group_geovelo_by_insee_code(geovelo_2026_gdf))
             )
-        return cls._processed_geovelo_df_2021, cls._processed_geovelo_df_2026
+        return cls._processed_geovelo_gdf_2021, cls._processed_geovelo_gdf_2026
+
+    @classmethod
+    def get_processed_unique_geovelo_gdf(cls) -> gpd.GeoDataFrame:
+        """
+        Output columns: 'insee', 'only_2026_geometry', 'only_2021_geometry', 'common_geometry'
+        """
+        if cls._processed_unique_geovelo_gdf is None:
+            processed_geovelo_gdf_2021, processed_geovelo_gdf_2026 = cls.get_processed_geovelo_gdfs()
+            cls._processed_unique_geovelo_gdf = gpd.read_file(
+                cls._get_local_file_path(
+                    "geovelo_unique_gdf.geojson",
+                    lambda: merge_geovelo_years(processed_geovelo_gdf_2021, processed_geovelo_gdf_2026))
+            )
+        return cls._processed_unique_geovelo_gdf
+
+    @classmethod
+    def get_processed_geovelo_length_df(cls) -> pd.DataFrame:
+        """
+        Output columns: 'insee', 'longueur_piste_2026', 'longueur_piste_2021'
+        """
+        if cls._processed_geovelo_length_df is None:
+            cls._processed_geovelo_length_df = pd.read_parquet(
+                cls._get_local_file_path(
+                    "geovelo_length_df.parquet",
+                    lambda: enrich_geovelo_with_length(cls.get_processed_unique_geovelo_gdf()))
+            )
+        return cls._processed_geovelo_length_df
 
     @classmethod
     def get_processed_postal_df(cls) -> pd.DataFrame:
@@ -309,8 +339,9 @@ class DataLoader:
         """
         if cls._processed_postal_df is None:
             cls._processed_postal_df = pd.read_parquet(
-                cls._get_local_file_path("postal_df", lambda: enrich_postal_with_name(cls.get_raw_postal_df(),
-                                                                                      cls.get_raw_population_df()))
+                cls._get_local_file_path("postal_df.parquet",
+                                         lambda: enrich_postal_with_name(cls.get_raw_postal_df(),
+                                                                         cls.get_raw_population_df()))
             )
         return cls._processed_postal_df
 
@@ -324,13 +355,14 @@ class DataLoader:
         """
         if cls._merged_df is None:
             cls._merged_df = pd.read_parquet(
-                cls._get_local_file_path("merged_df", lambda: merge_all_dfs(cls.get_processed_town_df(),
-                                                                            cls.get_raw_population_df(),
-                                                                            cls.get_raw_politics_df(),
-                                                                            cls.get_processed_roads_df(),
-                                                                            cls.get_raw_postal_df(),
-                                                                            cls.get_colors_df(),
-                                                                            *cls.get_processed_geovelo_dfs()))
+                cls._get_local_file_path("merged_df.parquet",
+                                         lambda: merge_all_dfs(cls.get_processed_town_df(),
+                                                               cls.get_raw_population_df(),
+                                                               cls.get_raw_politics_df(),
+                                                               cls.get_processed_roads_df(),
+                                                               cls.get_raw_postal_df(),
+                                                               cls.get_colors_df(),
+                                                               cls.get_processed_geovelo_length_df()))
             )
         return cls._merged_df
 
@@ -346,8 +378,8 @@ class DataLoader:
         """
         file_infos = cls.FILES_INFOS.get(name)
         if file_infos is None:
-            local_path = cls.DATA_DIR / f"{name}.parquet"
-            storage_path = cls.STORAGE_PREFIX + f"{name}.parquet"
+            local_path = cls.DATA_DIR / f"{name}"
+            storage_path = cls.STORAGE_PREFIX + f"{name}"
             download_url = None
         else:
             local_path = file_infos["local_path"]
@@ -370,7 +402,11 @@ class DataLoader:
             logging.info(f"File {name} loaded from direct URL.")
         else:
             df = obtention_fn()
-            df.to_parquet(local_path, index=False)
+            if isinstance(df, pd.DataFrame):
+
+                df.to_parquet(local_path, index=False)
+            elif isinstance(df, gpd.GeoDataFrame):
+                df.to_file(local_path, driver="GeoJSON")
             logging.info(f"File {name} computed.")
 
         cls._upload_file_to_storage(local_path, storage_path)
@@ -381,6 +417,7 @@ class DataLoader:
         """
         Return True if the file was downloaded.
         """
+        return False
         try:
             StorageClient.download_file(storage_path, local_path)
         except google.api_core.exceptions.NotFound:
@@ -394,6 +431,7 @@ class DataLoader:
 
     @staticmethod
     def _upload_file_to_storage(local_path: str, storage_path: str):
+        return
         try:
             StorageClient.upload_file(storage_path, local_path)
         except Exception as e:
@@ -417,15 +455,17 @@ class DataLoader:
             cls._raw_politics_df = None
             cls._raw_roads_df = None
             cls._raw_postal_df = None
-            cls._raw_geovelo_gpd_2021 = None
-            cls._raw_geovelo_gpd_2026 = None
-            cls._raw_towns_gpd = None
+            cls._raw_geovelo_gdf_2021 = None
+            cls._raw_geovelo_gdf_2026 = None
+            cls._raw_towns_gdf = None
             cls._colors_df = None
             cls._processed_town_df = None
             cls._processed_roads_df = None
             cls._processed_postal_df = None
-            cls._processed_geovelo_df_2021 = None
-            cls._processed_geovelo_df_2026 = None
+            cls._processed_geovelo_gdf_2021 = None
+            cls._processed_geovelo_gdf_2026 = None
+            cls._processed_unique_geovelo_gdf = None
+            cls._processed_geovelo_length_df = None
             cls._merged_df = None
             logging.info("Erased.")
 
