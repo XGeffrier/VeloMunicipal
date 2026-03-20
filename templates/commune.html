@@ -10,25 +10,24 @@
     --secondary: {{ data.couleur_secondaire or "#666" }};
 }
 
-body{
-    margin:0;
-    font-family:Inter,system-ui,sans-serif;
-
-    /* 🔥 utilisation forte de la couleur principale */
-    background: linear-gradient(135deg, var(--primary), #ffffff);
+body {
+    font-family: Inter, system-ui, sans-serif;
+    background: linear-gradient(
+        135deg,
+        var(--primary) 0%,
+        #ffffff 100%
+    );
+    background-attachment: fixed;
 }
 
 .container{
-    padding:20px;
-    max-width:900px;
+    padding:16px;
+    max-width:1000px;
     margin:auto;
 }
 
 .card{
-    background:white;
-    border-radius:20px;
-    padding:30px;
-    box-shadow:0 20px 50px rgba(0,0,0,0.15);
+    padding:20px;
 }
 
 /* 🔥 titre accentué */
@@ -40,18 +39,20 @@ h1{
 /* grille */
 .grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap:16px;
-    margin-top:20px;
+    margin-top:25px;
 }
 
 .item{
     background:#f8fafc;
     padding:16px;
     border-radius:12px;
+    border-left:5px solid var(--primary);
 
-    /* 🔥 petite barre colorée */
-    border-left:6px solid var(--primary);
+    /* 🔥 IMPORTANT */
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .label{
@@ -59,9 +60,12 @@ h1{
     opacity:0.6;
 }
 
-.value{
+.value {
     font-size:18px;
     font-weight:600;
+
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* 🔥 bloc évolution très visible */
