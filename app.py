@@ -3,7 +3,7 @@ import os
 
 from flask import Flask, render_template, send_from_directory, request
 
-from back import get_all_communes, get_data_of, is_valid, load_on_startup
+from back import get_all_communes, get_data_of, get_similar_communes, is_valid, load_on_startup
 
 if os.getenv("GOOGLE_RUNTIME"):
     import google.cloud.logging
@@ -52,6 +52,9 @@ def commune(insee_code):
         if is_valid(p2026):
             ratio_2026 = (p2026 / route) * 100
 
+    comparison_mode = request.args.get('mode', 'famille')
+    similar = get_similar_communes(insee_code, comparison_mode=comparison_mode)
+
     return render_template(
         "commune.html",
         data=data,
@@ -60,6 +63,8 @@ def commune(insee_code):
         evo_direction=evo_direction,
         ratio_2021=ratio_2021,
         ratio_2026=ratio_2026,
+        similar=similar,
+        comparison_mode=comparison_mode,
     )
 
 
