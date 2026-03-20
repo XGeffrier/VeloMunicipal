@@ -80,6 +80,73 @@
     margin-left: 10px;
   }
 
+  .similar-communes {
+    margin-top: 30px;
+    padding: 25px;
+    border-radius: 16px;
+    background: white;
+    border: 2px solid var(--primary);
+  }
+
+  .similar-communes h2 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: var(--primary-dark);
+  }
+
+  .similar-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .similar-item {
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border-left: 4px solid;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s;
+  }
+
+  .similar-item:hover {
+    background: #f0f4f8;
+  }
+
+  .similar-name {
+    font-weight: 600;
+    color: var(--primary-dark);
+  }
+
+  .similar-meta {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .similar-controls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .similar-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .similar-radio input[type="radio"] {
+    cursor: pointer;
+  }
+
+  .similar-radio label {
+    cursor: pointer;
+    margin: 0;
+  }
+
   /* ── Footer (bas du dégradé = blanc, texte sombre) ── */
   .site-footer { color: rgba(0, 0, 0, 0.5); }
   .site-footer .footer-how { color: rgba(0, 0, 0, 0.7); }
@@ -170,6 +237,43 @@
     </div>
     {% endif %}
 
+    {% if similar %}
+    <div class="similar-communes">
+      <h2>Communes similaires</h2>
+      <div class="similar-controls">
+        <div class="similar-radio">
+          <input type="radio" id="mode-famille" name="comparison_mode" value="famille" {% if comparison_mode == 'famille' %}checked{% endif %} onchange="changeMode('famille')">
+          <label for="mode-famille">Même famille politique</label>
+        </div>
+        <div class="similar-radio">
+          <input type="radio" id="mode-size" name="comparison_mode" value="size" {% if comparison_mode == 'size' %}checked{% endif %} onchange="changeMode('size')">
+          <label for="mode-size">Même taille</label>
+        </div>
+      </div>
+      <div class="similar-list">
+        {% for commune in similar %}
+        <a href="/commune/{{ commune.insee }}?mode={{ comparison_mode }}" class="similar-item" style="border-left-color: {{ commune.couleur_principale }};">
+          <div class="similar-name" style="color: {{ commune.couleur_principale }};">{{ commune.nom }}</div>
+          <div class="similar-meta">
+            {{ "%.0f"|format(commune.population) }} hab.
+            {% if is_valid(commune.longueur_piste_2021) and is_valid(commune.longueur_piste_2026) and commune.longueur_piste_2021 > 0 %}
+            • {% set similar_evo = ((commune.longueur_piste_2026 - commune.longueur_piste_2021) / commune.longueur_piste_2021) * 100 %}{% if similar_evo >= 0 %}+{% endif %}{{ "%.1f"|format(similar_evo) }} %
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 </div>
+
+<script>
+function changeMode(mode) {
+  const url = new URL(window.location);
+  url.searchParams.set('mode', mode);
+  window.location.href = url.toString();
+}
+</script>
 {% endblock %}
