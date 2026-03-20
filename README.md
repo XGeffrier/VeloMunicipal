@@ -2,7 +2,7 @@
 
 À la veille du second tour des élections municipales de 2026 en France, le site [velomunicipal.fr](https://velomunicipal.fr/) a pour objectif de mesurer l'évolution des pistes cyclables dans les communes françaises ces dernières années et de le comparer à la couleur politique de la mairie.
 
-Ce projet a été intégralement réalisé grâce à des données ouvertes par [Xavier Geffrier](https://www.linkedin.com/in/xavier-geffrier-4515b390). Le code est disponible sur [GitHub]https://github.com/XGeffrier/VeloMunicipal).
+Ce projet a été intégralement réalisé grâce à des données ouvertes par [Xavier Geffrier](https://www.linkedin.com/in/xavier-geffrier-4515b390). Le code est disponible sur [GitHub](https://github.com/XGeffrier/VeloMunicipal).
 
 Attention, des erreurs sont possibles. En particulier :
 - La plupart des maires n'étant pas affiliés à un parti, surtout dans les petites communes rurales, de nombreuses communes n'ont pas de données politiques, ce qui est normal. Toutefois, même certaines grandes villes où la couleur politique du maire est connue ne sont pas correctement renseignées pour le moment.
