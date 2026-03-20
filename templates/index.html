@@ -1,79 +1,159 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Recherche commune</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            margin: 0;
-        }
+<meta charset="UTF-8">
+<title>Recherche commune</title>
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
-        .container {
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-        }
+<style>
+body {
+    font-family: Inter, system-ui, sans-serif;
+    background: linear-gradient(135deg,#f5f7fb,#e8ecf5);
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding-top:12vh;
+}
 
-        input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
+.card {
+    background:white;
+    padding:28px;
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+    width:90%;
+    max-width:520px;
+}
 
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            font-size: 16px;
-            display: none;
-            cursor: pointer;
-        }
-    </style>
+h2 {
+    margin-top:0;
+}
+
+input {
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    border-radius:10px;
+    border:1px solid #ddd;
+
+    box-sizing:border-box; /* 🔥 FIX */
+}
+
+input:focus {
+    border-color:#4a6cff;
+    box-shadow:0 0 0 3px rgba(74,108,255,0.15);
+}
+
+
+
+.results {
+    margin-top:10px;
+    max-height:200px;
+    overflow:auto;
+}
+
+/* 🔥 mobile fix */
+.item {
+    padding:12px;
+    border-radius:8px;
+    cursor:pointer;
+
+    word-break: break-word;
+}
+
+.item:hover {
+    background:#f0f3ff;
+}
+
+button {
+    margin-top:18px;
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:#4a6cff;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    display:none;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
-    <h3>Commencez à taper le nom d'une commune ou d'un code postal</h3>
+<div class="card">
+    <h2>Commencez à taper le nom d'une commune ou d'un code postal</h2>
 
-    <input list="communes" id="search" placeholder="37000 Tours">
-    <datalist id="communes">
-        {% for c in communes %}
-            <option value="{{ c.zipCode }} {{ c.name }}" data-insee="{{ c.inseeCode }}"></option>
-        {% endfor %}
-    </datalist>
+    <input id="search" placeholder="37000 Tours">
 
-    <form id="form" method="get">
-        <button id="submitBtn">Voir</button>
+    <div class="results" id="results"></div>
+
+    <form id="form">
+        <button id="btn">Voir</button>
     </form>
 </div>
 
 <script>
-    const input = document.getElementById("search");
-    const button = document.getElementById("submitBtn");
-    const form = document.getElementById("form");
-    const options = document.querySelectorAll("#communes option");
+const communes = {{ communes|tojson }};
+const input = document.getElementById("search");
+const results = document.getElementById("results");
+const btn = document.getElementById("btn");
+const form = document.getElementById("form");
 
-    let mapping = {};
+let selected = null;
 
-    options.forEach(opt => {
-        mapping[opt.value] = opt.dataset.insee;
+function normalize(str){
+    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function score(query, text){
+    query = normalize(query);
+    text = normalize(text);
+
+    if(text.includes(query)) return 3;
+
+    let qi = 0;
+    for(let i=0;i<text.length && qi<query.length;i++){
+        if(text[i] === query[qi]) qi++;
+    }
+    return qi === query.length ? 2 : 0;
+}
+
+input.addEventListener("input", () => {
+    const q = input.value.trim();
+    results.innerHTML = "";
+    btn.style.display = "none";
+    selected = null;
+
+    if(q.length < 1) return;
+
+    let matches = communes
+        .map(c => {
+            const label = `${c.code_postal} ${c.nom}`;
+            return { ...c, label, score: score(q,label) };
+        })
+        .filter(c => c.score > 0)
+        .sort((a,b)=>b.score-a.score)
+        .slice(0,8);
+
+    matches.forEach(c=>{
+        const div = document.createElement("div");
+        div.className="item";
+        div.textContent=c.label;
+
+        div.onclick=()=>{
+            input.value=c.label;
+            selected=c;
+            results.innerHTML="";
+            btn.style.display="block";
+            form.action="/commune/"+c.insee;
+        };
+
+        results.appendChild(div);
     });
-
-    input.addEventListener("input", () => {
-        const val = input.value;
-
-        if (mapping[val]) {
-            button.style.display = "inline-block";
-            form.action = "/commune/" + mapping[val];
-        } else {
-            button.style.display = "none";
-        }
-    });
+});
 </script>
 
 </body>

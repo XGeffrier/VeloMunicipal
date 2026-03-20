@@ -32,7 +32,9 @@ jobs:
             --allow-unauthenticated \
             --region=europe-west1 \
             --project=fausse-commune \
-            --memory=4Gi \
+            --memory=8Gi \
+            --cpu=2 \
+            --min-instances=1 \
             --concurrency=20 \
             --timeout=3600 \
             --set-env-vars=APP_AUTH_TOKEN=${{ secrets.APP_AUTH_TOKEN }}
