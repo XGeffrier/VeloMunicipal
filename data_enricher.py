@@ -87,16 +87,16 @@ def merge_all_dfs(towns_df: pd.DataFrame,
     'longueur_piste_2021', 'longueur_piste_2026', 'couleur_principale', 'couleur_secondaire', 'longueur_route',
     'code_postal'
     """
-    # merge dataframes on insee code (only keep codes that are in all datasets)
-    merged_df = towns_df.merge(population_df, on="insee", how="inner")
-    merged_df = merged_df.merge(politics_df, on="insee", how="inner")
-    merged_df = merged_df.merge(roads_df, on="insee", how="inner")
-    merged_df = merged_df.merge(postal_df, on="insee", how="inner")
+    # merge dataframes on insee code
+    merged_df = postal_df.merge(politics_df, on="insee", how="left").fillna('')
     merged_df = merged_df.merge(colors_df, on="nuance_politique", how="inner")
     merged_df = (merged_df.merge(geovelo_2021_df, on="insee", how="left")
-                 .rename(columns={"longueur_piste": "longueur_piste_2021"}))
+                 .rename(columns={"longueur_piste": "longueur_piste_2021"})).fillna(0)
     merged_df = (merged_df.merge(geovelo_2026_df, on="insee", how="left")
-                 .rename(columns={"longueur_piste": "longueur_piste_2026"}))
+                 .rename(columns={"longueur_piste": "longueur_piste_2026"})).fillna(0)
+    merged_df = merged_df.merge(population_df, on="insee", how="left")
+    merged_df = merged_df.merge(roads_df, on="insee", how="inner")
+    merged_df = merged_df.merge(towns_df, on="insee", how="inner")
     return merged_df
 
 

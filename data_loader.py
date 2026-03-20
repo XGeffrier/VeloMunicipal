@@ -133,7 +133,7 @@ class DataLoader:
         Paris, Lyon and Marseille have one row each, but Paris has no politics data on external file, so we add it.
         """
         if cls._raw_politics_df is None:
-            types = {"cog_commune": str, "nuance_politique": "category", "famille_nuance": "category"}
+            types = {"cog_commune": str, "nuance_politique": str, "famille_nuance": str}
             politics_df = pd.read_csv(cls._get_local_file_path("towns_politics_2020"), dtype=types)
 
             columns_to_keep = ["cog_commune", "nuance_politique", "famille_nuance"]
@@ -455,6 +455,6 @@ def complementary_color(my_hex):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    DataLoader.erase_all_cache()
+    DataLoader.erase_all_cache(storage=False)
     DataLoader.get_merged_df()
     DataLoader.get_processed_postal_df()
