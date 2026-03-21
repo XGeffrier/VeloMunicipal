@@ -22,6 +22,32 @@
 
   .card { padding: 20px; }
 
+  .commune-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 2px solid var(--primary-dark);
+    color: var(--primary-dark);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .back-btn:hover {
+    background: var(--primary-dark);
+    color: white;
+  }
+
   h1 {
     margin: 0;
     color: var(--primary-dark);
@@ -56,9 +82,9 @@
   }
 
   .ratio-inline {
-    font-size: 14px;
-    font-weight: 400;
-    color: #888;
+    font-size: 16px;
+    font-weight: 700;
+    color: #666;
   }
 
   .highlight-blocks {
@@ -77,9 +103,12 @@
   }
 
   .block-title {
-    font-size: 15px;
-    opacity: 0.85;
-    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.65;
+    margin-bottom: 10px;
   }
 
   .big {
@@ -120,7 +149,10 @@
 <div class="container">
   <div class="card">
 
-    <h1>{{ data.nom }}</h1>
+    <div class="commune-header">
+      <a class="back-btn" href="/">← Retour</a>
+      <h1>{{ data.nom }}</h1>
+    </div>
 
     <div class="grid">
 
@@ -144,7 +176,7 @@
         <div class="value">
           {{ "%.0f"|format(data.longueur_piste_2021) }} km
           {% if ratio_2021 %}
-          <span class="ratio-inline">({{ "%.0f"|format(ratio_2021) }} % des routes)</span>
+          <span class="ratio-inline">({{ "%.0f"|format(ratio_2021) }}m pour 100m de route)</span>
           {% endif %}
         </div>
       </div>
@@ -156,7 +188,7 @@
         <div class="value">
           {{ "%.0f"|format(data.longueur_piste_2026) }} km
           {% if ratio_2026 %}
-          <span class="ratio-inline">({{ "%.0f"|format(ratio_2026) }} % des routes)</span>
+          <span class="ratio-inline">({{ "%.0f"|format(ratio_2026) }}m pour 100m de route)</span>
           {% endif %}
         </div>
       </div>
@@ -208,15 +240,15 @@
       <div class="comparaison">
         <div class="block-title">Comparaison</div>
         <div class="avg-line">
-          En moyenne, les {{ cat_label }} ont
+          En moyenne, les {{ cat_label }} ont en 2026
           <strong>{{ cat_avg }}</strong> mètres de piste cyclable
-          pour 100 mètres de route
+          pour 100 mètres de route.
         </div>
         {% if ratio_2026 is not none %}
           {% if ratio_2026 >= cat_avg %}
-          <div class="verdict">Vous êtes au-dessus ! 🎉</div>
+          <div class="verdict">Avec {{ "%.1f"|format(ratio_2026) }} mètres, vous êtes au-dessus !</div>
           {% else %}
-          <div class="verdict">Vous êtes en-dessous 😔</div>
+          <div class="verdict">Avec {{ "%.1f"|format(ratio_2026) }} mètres, vous êtes en-dessous.</div>
           {% endif %}
         {% endif %}
       </div>
