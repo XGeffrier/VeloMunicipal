@@ -22,6 +22,32 @@
 
   .card { padding: 20px; }
 
+  .commune-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 2px solid var(--primary-dark);
+    color: var(--primary-dark);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .back-btn:hover {
+    background: var(--primary-dark);
+    color: white;
+  }
+
   h1 {
     margin: 0;
     color: var(--primary-dark);
@@ -56,18 +82,33 @@
   }
 
   .ratio-inline {
-    font-size: 14px;
-    font-weight: 400;
-    color: #888;
+    font-size: 16px;
+    font-weight: 700;
+    color: #666;
   }
 
-  .evolution {
+  .highlight-blocks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
     margin-top: 30px;
+  }
+
+  .evolution, .comparaison {
     padding: 25px;
     border-radius: 16px;
     background: var(--primary);
     color: white;
     text-align: center;
+  }
+
+  .block-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.65;
+    margin-bottom: 10px;
   }
 
   .big {
@@ -78,6 +119,19 @@
   .arrow {
     font-size: 32px;
     margin-left: 10px;
+  }
+
+  .comparaison .avg-line {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .comparaison .verdict {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 10px;
   }
 
   /* ── Footer (bas du dégradé = blanc, texte sombre) ── */
@@ -95,16 +149,12 @@
 <div class="container">
   <div class="card">
 
-    <h1>{{ data.nom }}</h1>
+    <div class="commune-header">
+      <a class="back-btn" href="/">← Retour</a>
+      <h1>{{ data.nom }}</h1>
+    </div>
 
     <div class="grid">
-
-      {% if is_valid(data.superficie) %}
-      <div class="item">
-        <div class="label">Superficie</div>
-        <div class="value">{{ "%.2f"|format(data.superficie) }} km²</div>
-      </div>
-      {% endif %}
 
       {% if is_valid(data.population) %}
       <div class="item">
@@ -126,7 +176,7 @@
         <div class="value">
           {{ "%.0f"|format(data.longueur_piste_2021) }} km
           {% if ratio_2021 %}
-          <span class="ratio-inline">({{ "%.0f"|format(ratio_2021) }} % des routes)</span>
+          <span class="ratio-inline">({{ "%.0f"|format(ratio_2021) }}m pour 100m de route)</span>
           {% endif %}
         </div>
       </div>
@@ -138,7 +188,7 @@
         <div class="value">
           {{ "%.0f"|format(data.longueur_piste_2026) }} km
           {% if ratio_2026 %}
-          <span class="ratio-inline">({{ "%.0f"|format(ratio_2026) }} % des routes)</span>
+          <span class="ratio-inline">({{ "%.0f"|format(ratio_2026) }}m pour 100m de route)</span>
           {% endif %}
         </div>
       </div>
@@ -160,15 +210,51 @@
 
     </div>
 
-    {% if evo_pct is not none %}
-    <div class="evolution">
-      Évolution des pistes cyclables
-      <div class="big">
-        {{ "%.1f"|format(evo_pct) }} %
-        <span class="arrow">{% if evo_direction == "up" %}↗{% else %}↘{% endif %}</span>
-      </div>
-    </div>
+    {# ── Détermination de la catégorie pour la comparaison ── #}
+    {% if is_valid(data.population) %}
+      {% if data.population >= 100000 %}
+        {% set cat_label = "villes de plus de 100 000 habitants" %}
+        {% set cat_avg   = 48.3 %}
+      {% elif data.population >= 10000 %}
+        {% set cat_label = "villes entre 10 000 et 100 000 habitants" %}
+        {% set cat_avg   = 23.5 %}
+      {% else %}
+        {% set cat_label = "communes de moins de 10 000 habitants" %}
+        {% set cat_avg   = 4.5 %}
+      {% endif %}
     {% endif %}
+
+    <div class="highlight-blocks">
+
+      {% if evo_pct is not none %}
+      <div class="evolution">
+        <div class="block-title">Évolution des pistes cyclables</div>
+        <div class="big">
+          {{ "%.1f"|format(evo_pct) }} %
+          <span class="arrow">{% if evo_direction == "up" %}↗{% else %}↘{% endif %}</span>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if is_valid(data.population) %}
+      <div class="comparaison">
+        <div class="block-title">Comparaison</div>
+        <div class="avg-line">
+          En moyenne, les {{ cat_label }} ont en 2026
+          <strong>{{ cat_avg }}</strong> mètres de piste cyclable
+          pour 100 mètres de route.
+        </div>
+        {% if ratio_2026 is not none %}
+          {% if ratio_2026 >= cat_avg %}
+          <div class="verdict">Avec {{ "%.1f"|format(ratio_2026) }} mètres, vous êtes au-dessus !</div>
+          {% else %}
+          <div class="verdict">Avec {{ "%.1f"|format(ratio_2026) }} mètres, vous êtes en-dessous.</div>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
 
   </div>
 </div>
