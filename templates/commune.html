@@ -61,13 +61,25 @@
     color: #888;
   }
 
-  .evolution {
+  .highlight-blocks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
     margin-top: 30px;
+  }
+
+  .evolution, .comparaison {
     padding: 25px;
     border-radius: 16px;
     background: var(--primary);
     color: white;
     text-align: center;
+  }
+
+  .block-title {
+    font-size: 15px;
+    opacity: 0.85;
+    margin-bottom: 8px;
   }
 
   .big {
@@ -78,6 +90,19 @@
   .arrow {
     font-size: 32px;
     margin-left: 10px;
+  }
+
+  .comparaison .avg-line {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .comparaison .verdict {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 10px;
   }
 
   /* ── Footer (bas du dégradé = blanc, texte sombre) ── */
@@ -98,13 +123,6 @@
     <h1>{{ data.nom }}</h1>
 
     <div class="grid">
-
-      {% if is_valid(data.superficie) %}
-      <div class="item">
-        <div class="label">Superficie</div>
-        <div class="value">{{ "%.2f"|format(data.superficie) }} km²</div>
-      </div>
-      {% endif %}
 
       {% if is_valid(data.population) %}
       <div class="item">
@@ -160,15 +178,51 @@
 
     </div>
 
-    {% if evo_pct is not none %}
-    <div class="evolution">
-      Évolution des pistes cyclables
-      <div class="big">
-        {{ "%.1f"|format(evo_pct) }} %
-        <span class="arrow">{% if evo_direction == "up" %}↗{% else %}↘{% endif %}</span>
-      </div>
-    </div>
+    {# ── Détermination de la catégorie pour la comparaison ── #}
+    {% if is_valid(data.population) %}
+      {% if data.population >= 100000 %}
+        {% set cat_label = "villes de plus de 100 000 habitants" %}
+        {% set cat_avg   = 48.3 %}
+      {% elif data.population >= 10000 %}
+        {% set cat_label = "villes entre 10 000 et 100 000 habitants" %}
+        {% set cat_avg   = 23.5 %}
+      {% else %}
+        {% set cat_label = "communes de moins de 10 000 habitants" %}
+        {% set cat_avg   = 4.5 %}
+      {% endif %}
     {% endif %}
+
+    <div class="highlight-blocks">
+
+      {% if evo_pct is not none %}
+      <div class="evolution">
+        <div class="block-title">Évolution des pistes cyclables</div>
+        <div class="big">
+          {{ "%.1f"|format(evo_pct) }} %
+          <span class="arrow">{% if evo_direction == "up" %}↗{% else %}↘{% endif %}</span>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if is_valid(data.population) %}
+      <div class="comparaison">
+        <div class="block-title">Comparaison</div>
+        <div class="avg-line">
+          En moyenne, les {{ cat_label }} ont
+          <strong>{{ cat_avg }}</strong> mètres de piste cyclable
+          pour 100 mètres de route
+        </div>
+        {% if ratio_2026 is not none %}
+          {% if ratio_2026 >= cat_avg %}
+          <div class="verdict">Vous êtes au-dessus ! 🎉</div>
+          {% else %}
+          <div class="verdict">Vous êtes en-dessous 😔</div>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
 
   </div>
 </div>
