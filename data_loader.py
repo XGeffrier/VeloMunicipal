@@ -511,11 +511,6 @@ def complementary_color(my_hex):
 
 
 if __name__ == '__main__':
-    formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s", "%Y-%m-%d %H:%M:%S")
-    logging.getLogger().setLevel(logging.INFO)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logging.getLogger().addHandler(console_handler)
     # DataLoader.nb_town = 100
     # DataLoader.erase_all_cache()
     DataLoader.get_merged_df()
