@@ -20,10 +20,16 @@ def load_on_startup():
 def get_all_communes() -> list[dict]:
     """
     Return a list of communes, each commune being a dict with the following keys:
-    'code_postal', 'nom', 'insee'
+    'code_postal', 'nom', 'insee', 'population'
     """
-    return [{"code_postal": row["code_postal"], "nom": row["nom"], "insee": row["insee"]}
-            for _, row in DataLoader.get_processed_postal_df().iterrows()]
+    postal_df = DataLoader.get_processed_postal_df().merge(
+        DataLoader.get_merged_df()[['insee', 'population']],
+        on='insee',
+        how='left'
+    )
+    return [{"code_postal": row["code_postal"], "nom": row["nom"], "insee": row["insee"],
+             "population": int(row["population"]) if not pd.isna(row["population"]) else 0}
+            for _, row in postal_df.iterrows()]
 
 
 def get_data_of(insee_code: str) -> dict | None:
