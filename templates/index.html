@@ -61,6 +61,12 @@
   }
   .result-item:hover { background: #f0f3ff; }
 
+  .result-pop {
+    font-size: 0.85em;
+    color: #999;
+    margin-left: 6px;
+  }
+
   #btn {
     margin-top: 18px;
     width: 100%;
@@ -125,15 +131,24 @@
     return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
 
-  function score(query, text) {
+  function score(query, text, cityName, population) {
     query = normalize(query);
     text  = normalize(text);
-    if (text.includes(query)) return 3;
-    let qi = 0;
-    for (let i = 0; i < text.length && qi < query.length; i++) {
-      if (text[i] === query[qi]) qi++;
+    const normalizedCity = normalize(cityName);
+    let relevance = 0;
+    if (normalizedCity === query) relevance = 4;
+    else if (text.includes(query)) relevance = 3;
+    else {
+      let qi = 0;
+      for (let i = 0; i < text.length && qi < query.length; i++) {
+        if (text[i] === query[qi]) qi++;
+      }
+      relevance = qi === query.length ? 2 : 0;
     }
-    return qi === query.length ? 2 : 0;
+    // Normalize population to a value between 0 and 0.99 to use as tiebreaker
+    const maxPopulation = 2000000; // Paris approximate population
+    const populationBonus = Math.min(population / maxPopulation, 0.99);
+    return relevance + populationBonus;
   }
 
   input.addEventListener("input", () => {
@@ -143,15 +158,22 @@
 
     if (q.length < 1) return;
 
+    const seen = new Set();
     communes
-      .map(c => ({ ...c, label: `${c.code_postal} ${c.nom}`, score: score(q, `${c.code_postal} ${c.nom}`) }))
+      .map(c => ({ ...c, label: `${c.code_postal} ${c.nom}`, score: score(q, `${c.code_postal} ${c.nom}`, c.nom, c.population) }))
       .filter(c => c.score > 0)
+      .filter(c => {
+        if (seen.has(c.label)) return false;
+        seen.add(c.label);
+        return true;
+      })
       .sort((a, b) => b.score - a.score)
       .slice(0, 8)
       .forEach(c => {
         const div = document.createElement("div");
         div.className = "result-item";
-        div.textContent = c.label;
+        const popK = Math.round(c.population / 1000) || '<1';
+        div.innerHTML = `${c.label}<span class="result-pop">${popK}k</span>`;
         div.onclick = () => {
           input.value = c.label;
           results.innerHTML = "";
